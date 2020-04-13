@@ -1,5 +1,5 @@
 ##############################################
-# $Id: 14_SD_WS.pm 20747 2019-12-14 22:30:13Z Sidey $
+# $Id: 14_SD_WS.pm v3.4.3 2020-04-07 21:31:57Z Sidey $
 #
 # The purpose of this module is to support serval
 # weather sensors which use various protocol
@@ -29,6 +29,8 @@
 
 package main;
 
+#use version 0.77; our $VERSION = version->declare('v3.4.3');
+
 use strict;
 use warnings;
 # use Digest::CRC qw(crc);
@@ -48,8 +50,7 @@ sub SD_WS_Initialize($)
 	$hash->{DefFn}		= "SD_WS_Define";
 	$hash->{UndefFn}	= "SD_WS_Undef";
 	$hash->{ParseFn}	= "SD_WS_Parse";
-	$hash->{AttrFn}		= "SD_WS_Attr";
-	$hash->{AttrList}	= "IODev do_not_notify:1,0 ignore:0,1 showtime:1,0 " .
+	$hash->{AttrList}	= "do_not_notify:1,0 ignore:0,1 showtime:1,0 " .
 											"model:E0001PA,S522,TX-EZ6,other " .
                       "max-deviation-temp:1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50 ".
                       "max-deviation-hum:1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50 ".
@@ -1129,21 +1130,6 @@ sub SD_WS_Parse($$)
 
 }
 
-sub SD_WS_Attr(@)
-{
-	my @a = @_;
-	
-	# Make possible to use the same code for different logical devices when they
-	# are received through different physical devices.
-	return  if($a[0] ne "set" || $a[2] ne "IODev");
-	my $hash = $defs{$a[1]};
-	my $iohash = $defs{$a[3]};
-	my $cde = $hash->{CODE};
-	delete($modules{SD_WS}{defptr}{$cde});
-	$modules{SD_WS}{defptr}{$iohash->{NAME} . "." . $cde} = $hash;
-	return undef;
-}
-
 # Pruefsummenberechnung "reverse Galois LFSR with byte reflection"
 # Wird nur fuer TFA Drop Protokoll benoetigt
 # TFA Drop Protokoll benoetigt als gen 0x31, als key 0xf4
@@ -1231,20 +1217,20 @@ sub SD_WS_WH2SHIFT($){
     <li>Bresser 7009994</li>
     <li>BresserTemeo</li>
     <li>Conrad S522</li>
-		<li>EuroChron EFTH-800 (temperature and humidity sensor)</li>
+	<li>EuroChron EFTH-800 (temperature and humidity sensor)</li>
     <li>NC-3911, NC-3912 refrigerator thermometer</li>
 		<li>Opus XT300</li>
     <li>PV-8644 infactory Poolthermometer</li>
     <li>Renkforce E0001PA</li>
-		<li>Regenmesser DROP TFA 47.3005.01 mit Regensensor TFA 30.3233.01</li>
-		<li>TECVANCE TV-4848</li>
-		<li>Thermometer TFA 30.3228.02, TFA 30.3229.02, FT007T, FT007TP, F007T, F007TP</li>
-		<li>Thermo-Hygrometer TFA 30.3208.02, FT007TH, F007TH
-		<li>TX-EZ6 for Weatherstation TZS First Austria</li>
-		<li>WH2 (TFA Dostmann/Wertheim 30.3157 (sold in Germany), Agimex Rosenborg 66796 (sold in Denmark),ClimeMET CM9088 (Sold in UK)</li>
-		<li>Weatherstation Auriol IAN 283582 Version 06/2017 (Lidl), Modell-Nr.: HG02832D</li>
-		<li>Weatherstation Auriol AHFL 433 B2, IAN 314695 (Lidl)</li>
-		<li>Weatherstation TFA 35.1140.01 with temperature / humidity sensor TFA 30.3221.02 and temperature / humidity / windspeed sensor TFA 30.3222.02</li>
+	<li>Regenmesser DROP TFA 47.3005.01 mit Regensensor TFA 30.3233.01</li>
+	<li>TECVANCE TV-4848</li>
+	<li>Thermometer TFA 30.3228.02, TFA 30.3229.02, FT007T, FT007TP, F007T, F007TP</li>
+	<li>Thermo-Hygrometer TFA 30.3208.02, FT007TH, F007TH</li>
+	<li>TX-EZ6 for Weatherstation TZS First Austria</li>
+	<li>WH2 (TFA Dostmann/Wertheim 30.3157 (sold in Germany), Agimex Rosenborg 66796 (sold in Denmark),ClimeMET CM9088 (Sold in UK)</li>
+	<li>Weatherstation Auriol IAN 283582 Version 06/2017 (Lidl), Modell-Nr.: HG02832D</li>
+	<li>Weatherstation Auriol AHFL 433 B2, IAN 314695 (Lidl)</li>
+	<li>Weatherstation TFA 35.1140.01 with temperature / humidity sensor TFA 30.3221.02 and temperature / humidity / windspeed sensor TFA 30.3222.02</li>
   </ul><br><br>
 
   <a name="SD_WS_Define"></a>
@@ -1342,7 +1328,7 @@ sub SD_WS_WH2SHIFT($){
     <li>Renkforce E0001PA</li>
 		<li>TECVANCE TV-4848</li>
 		<li>Temperatur-Sensor TFA 30.3228.02, TFA 30.3229.02, FT007T, FT007TP, F007T, F007TP</li>
-		<li>Temperatur/Feuchte-Sensor TFA 30.3208.02, FT007TH, F007TH
+		<li>Temperatur/Feuchte-Sensor TFA 30.3208.02, FT007TH, F007TH</li>
 		<li>TX-EZ6 fuer Wetterstation TZS First Austria</li>
 		<li>WH2 (TFA Dostmann/Wertheim 30.3157 (Deutschland), Agimex Rosenborg 66796 (Denmark), ClimeMET CM9088 (UK)</li>
 		<li>Wetterstation Auriol IAN 283582 Version 06/2017 (Lidl), Modell-Nr.: HG02832D</li>
@@ -1366,16 +1352,16 @@ sub SD_WS_WH2SHIFT($){
   <ul>(verschieden, je nach Typ des Sensors)</ul>
   <ul>
   	<li>batteryChanged (1)</li>
-		<li>batteryState (low oder ok)</li>
+	<li>batteryState (low oder ok)</li>
     <li>channel (Sensor-Kanal)</li>
     <li>humidity (Luftfeuchte (1-100 %)</li>
-		<li>humidityTrend (gleichbleibend, steigend, fallend)</li>
-		<li>rain_total (l/m&sup2;))</li>
+	<li>humidityTrend (gleichbleibend, steigend, fallend)</li>
+	<li>rain_total (l/m&sup2;))</li>
     <li>sendmode (Der Sendemodus, automatic oder manuell mittels Taster am Sender)</li>
-		<li>state (T: H: W: R:)</li>
+	<li>state (T: H: W: R:)</li>
     <li>temperature (&deg;C)</li>
-		<li>temperatureTrend (gleichbleibend, steigend, fallend)</li>
-		<li>type (Sensortyp)</li>
+	<li>temperatureTrend (gleichbleibend, steigend, fallend)</li>
+	<li>type (Sensortyp)</li>
   </ul>
   <br><br>
 
