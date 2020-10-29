@@ -1,4 +1,4 @@
-SIGNALduino - FHEM Modules stable Version 3.4.3
+SIGNALduino - FHEM Modules development Version 3.5.1
 
 [![Coverage Status](https://coveralls.io/repos/github/RFD-FHEM/RFFHEM/badge.svg?branch=master)](https://coveralls.io/github/RFD-FHEM/RFFHEM?branch=master) [![Build Status](https://travis-ci.org/RFD-FHEM/RFFHEM.svg?branch=master)](https://travis-ci.org/RFD-FHEM/RFFHEM)
 
@@ -14,6 +14,7 @@ Supported Devices / Protocols
 |Arduino Sensor | multi purpose sensor based on arduino |
 |Atlantic Security | some sensors (MD-210R / MD_230R / MD-2018R / MD-2003R) |
 |Auriol IAN 60107, 114324, 275901, 283582, 297514, 314695 (Lidl) | Weather station |
+|BF-301 | Remote control|
 |benon (Semexo OHG) | Remote control (BH-P)|
 |BOSCH / Neff / Refsta Topdraft | Remote control (SF01 01319004, SF01 01319004 v2)|
 |CAME TOP 432EV | Remote control |
@@ -25,7 +26,7 @@ Supported Devices / Protocols
 |Elro DB200, KANGTAI, unitec | wireless bell |
 |EM1000WZ | Energy-Monitor |
 |ESTO Lighting GmbH KL-RF01 | Remote control |
-|EuroChron EFTH-800 | Weather station (temperature and humidity) |
+|EuroChron EFTH-800, EFS-3110A | Weather station (temperature and humidity) |
 |FA21RF | Smoke detector | 
 |FHT80 | Roomthermostat (only receive) |
 |FHT80TF | door/window switch |
@@ -35,9 +36,11 @@ Supported Devices / Protocols
 |FT0073 | Weather sensors|
 |FreeTec PE-6946 | wireless bell |
 |Froggit FT007T, FT007TP, FT007TH | Thermo-Hygrometer, Thermometer |
+|GEA-028DB | Radio door chime |
 |GEIGER GF0x01, GF0x02, GF0x03 | Remote control (compatible to Tedsen) |
 |Grothe Mistral SE 03.1| wireless gong |
 |GT-9000| Remote control based on protocol GT-9000 with encoding (EASY HOME RCT DS1, Tec Star)|
+|GT-TMBBQ-01| BBQ temperature sensor|
 |Hama TS33C, Bresser Thermo/Hygro Sensor  | Weather sensor |
 |Heidemann, Heidemann HX, VTX-BELL | wireless bell |
 |Hoermann HSM2, HSM4, HS1-868-BS | Remote control |
@@ -51,6 +54,7 @@ Supported Devices / Protocols
 |Medion OR28V | Remote control |
 |Momento | Remote control for wireless digital picture frame |
 |Mumbi m-FS300 | Remote control |
+|Navaris 44344.04 | Touch light switch |
 |NC-3911, NC-3912 | Refrigerator thermometer |
 |Novy 840029, 840039 | Remote control |
 |Opus XT300 | Soil moisture sensor |
@@ -74,6 +78,7 @@ Supported Devices / Protocols
 |Techmar Garden Lights | Remote control |
 |Technoline TX3  | Weather sensor |
 |Tedsen SKX1xx, SKX2xx, SKX4xx, SKX6xx | Remote control |
+|TR60C-1 | Remote control with touch screen |
 |Visivon remote PT4450  | Remote control |
 |VLOXO | wireless bell |
 |WH2 | (TFA 30.3157 nur Temp, Hum = 255 -> nicht angezeigt)|

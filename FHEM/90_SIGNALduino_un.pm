@@ -4,15 +4,17 @@
 # The file is part of the SIGNALduino project
 # see http://www.fhemwiki.de/wiki/SIGNALduino to support debugging of unknown signal data
 # The purpos is to use it as addition to the SIGNALduino
-# S. Butzek, 2015 | HomeAuto_User & elektron-bbs - 2018
 #
+# 2015-2018  S.Butzek
+# 2018-2020  S.Butzek, HomeAutoUser, elektron-bbs
 
 package main;
 
 use strict;
 use warnings;
 use POSIX;
-use List::Util qw(any);				# for any function
+use List::Util qw(any);         # for any function
+use lib::SD_Protocols;          # for any function
 
 my @bitcountlength = (0,0,0);		# array min|default|max
 
@@ -102,7 +104,7 @@ SIGNALduino_un_Parse($$)
 	my $bitData= unpack("B$blen", pack("H$hlen", $rawData)); 
 	Log3 $hash, 4, "$name converted to bits: $bitData";
 		
-	if ($protocol == "21" && length($bitData)>=32)  ##Einhell doorshutter
+	if ($protocol == 21 && length($bitData)>=32)  ##Einhell doorshutter
 	{
 		Log3 $hash, 4, "$name / Einhell doorshutter received";
 		
@@ -115,7 +117,7 @@ SIGNALduino_un_Parse($$)
 		
  	    
 		Log3 $hash, 4, "$name found doorshutter from Einhell. id=$id, channel=$channel, direction=$dir";
-	} elsif ($protocol == "23" && length($bitData)>=32)  ##Perl Sensor
+	} elsif ($protocol == 23 && length($bitData)>=32)  ##Perl Sensor
 	{
 		my $SensorTyp = "perl NC-7367?";
 		my $id = oct ("0b".substr($bitData,4,4));  
@@ -180,7 +182,7 @@ SIGNALduino_un_Parse($$)
 		my $hexcount = length($rawData);
 		my $bitDataInvert = $bitData;
 		$bitDataInvert =~ tr/01/10/; 			# invert message and check if it is possible to deocde now
-		my $rawDataInvert = SIGNALduino_b2h($bitDataInvert);
+		my $rawDataInvert = lib::SD_Protocols::binStr2hexStr($bitDataInvert);
 		
 		my $seconds = ReadingsAge($name, "state", 0);
 

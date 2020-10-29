@@ -26,6 +26,8 @@
 # 29.12.2019 neues Protokoll 27: Temperatur-/Feuchtigkeitssensor EuroChron EFTH-800
 # 09.02.2020 neues Protokoll 54: Regenmesser TFA Drop
 # 22.02.2020 Protokoll 58: neuer Sensor TFA 30.3228.02, FT007T Thermometer Sensor
+# 25.08.2020 Protokoll 27: neuer Sensor EFS-3110A
+# 27.09.2020 neues Protokoll 106: BBQ Temperature Sensor GT-TMBBQ-01s (Sender), GT-TMBBQ-01e (Empfaenger)
 
 package main;
 
@@ -75,6 +77,7 @@ sub SD_WS_Initialize($)
 		"SD_WS_85_THW_.*"	=> { ATTR => "event-min-interval:.*:300 event-on-change-reading:.*", FILTER => "%NAME", GPLOT => "temp4hum4:Temp/Hum,", autocreateThreshold => "4:120"},
 		"SD_WS_89_TH.*"	=> { ATTR => "event-min-interval:.*:300 event-on-change-reading:.*", FILTER => "%NAME", GPLOT => "temp4hum4:Temp/Hum,", autocreateThreshold => "3:180"},
 		"SD_WS_94_T.*"	=> { ATTR => "event-min-interval:.*:300 event-on-change-reading:.*", FILTER => "%NAME", GPLOT => "temp4:Temp,", autocreateThreshold => "3:180"},
+		"SD_WS_106_T.*" => { ATTR => "event-min-interval:.*:300 event-on-change-reading:.*", FILTER => "%NAME", GPLOT => "temp4:Temp,", autocreateThreshold => "5:60"},
 	};
 
 }
@@ -187,8 +190,8 @@ sub SD_WS_Parse($$)
     	 	 },
 		27 =>
 			{
-				# Protokollbeschreibung: Temperatur-/Feuchtigkeitssensor EuroChron EFTH-800
-				# -----------------------------------------------------------------------------------
+				# Protokollbeschreibung: Temperatur-/Feuchtigkeitssensor EuroChron EFTH-800, EFS-3110A
+				# ------------------------------------------------------------------------------------
 				# 0    4    | 8    12   | 16   20   | 24   28   | 32   36   | 40   44
 				# 0000 1001 | 0001 0110 | 0001 0000 | 0000 0000 | 0100 1001 | 0100 0000
 				# ?ccc iiii | iiii iiii | bstt tttt | tttt ???? | hhhh hhhh | xxxx xxxx
@@ -199,11 +202,12 @@ sub SD_WS_Parse($$)
 				# t: 10 bit unsigned temperature, scaled by 10
 				# h:  8 bit relative humidity percentage (BCD)
 				# x:  8 bit CRC8
-				# ?: unknown (Bit 0, 28-31 always 0 ???)
+				# ?: unknown (Bit 0, 28-31, always 0000 by EFTH-800, 1000 by EFS-3110A)
 				# The sensor sends two messages at intervals of about 57-58 seconds
-				sensortype => 'EFTH-800',
+				sensortype => 'EFTH-800, EFS-3110A',
 				model      => 'SD_WS_27_TH',
-				prematch   => sub {my $rawData = shift; return 1 if ($rawData =~ /^[0-9A-F]{7}0[0-9]{2}[0-9A-F]{2}$/); },	# prematch 113C49A 0 47 AE
+				# prematch   => sub {my $rawData = shift; return 1 if ($rawData =~ /^[0-9A-F]{7}0[0-9]{2}[0-9A-F]{2}$/); },	# prematch 113C49A 0 47 AE (EFTH-800)
+				prematch   => sub {my $rawData = shift; return 1 if ($rawData =~ /^[0-9A-F]{7}0|8[0-9]{2}[0-9A-F]{2}$/); },	# prematch 3F94519 8 55 C7 (EFS-3110A)
 				channel    => sub {my (undef,$bitData) = @_; return (SD_WS_binaryToNumber($bitData,1,3) + 1 ); },
 				id         =>	sub {my (undef,$bitData) = @_; return substr($rawData,1,3); },
 				bat        => sub {my (undef,$bitData) = @_; return substr($bitData,16,1) eq "0" ? "ok" : "low";},
@@ -642,6 +646,26 @@ sub SD_WS_Parse($$)
 				},
 				crcok      => sub {return 1;},		# crc test method is so far unknown
 		},
+		106 => {
+				# BBQ temperature sensor MODELL: GT-TMBBQ-01s (Sender), GT-TMBBQ-01e (Empfaenger)
+				# -------------------------------------------------------------------------------
+				# 0    4    | 8    12   | 16   20
+				# 1101 1111 | 0011 0100 | 0100 00
+				# iiii iiii | tttt tttt | tttt tt
+				# i:  8 bit id, changes each time the sensor is switched on
+				# t: 14 bit unsigned fahrenheit offset by 90 and scaled by 20
+				sensortype => 'GT-TMBBQ-01',
+				model      => 'SD_WS_106_T',
+				prematch   => sub { return 1; }, # no precheck known
+				id         =>	sub { my ($rawData,undef) = @_; return substr($rawData,0,2); },
+				temp       => sub {	my (undef,$bitData) = @_;
+														$rawTemp = 	SD_WS_binaryToNumber($bitData,8,21);
+														my $tempFh = $rawTemp / 20 - 90; # Grad Fahrenheit
+														Log3 $name, 4, "$name: SD_WS_106_T tempraw = $rawTemp, temp = $tempFh Fahrenheit";
+														return (round((($tempFh - 32) * 5 / 9) , 1)); # Grad Celsius
+													},
+				crcok      => sub {return 1;}, # CRC test method does not exist
+		} ,
 	);
 
 	Log3 $name, 4, "$name: SD_WS_Parse protocol $protocol, rawData $rawData";
@@ -865,14 +889,14 @@ sub SD_WS_Parse($$)
 	      my $bitData = unpack("B$blen", pack("H$hlen", $rawData));
 	     
 	      my $temptyp = substr($bitData,0,8);
-	      if( $temptyp == "11111110" ) {
+	      if( $temptyp eq '11111110' ) {
 	          $rawData = SD_WS_WH2SHIFT($rawData);
 	          $msg = $msg_vor.$rawData;
 	          $bitData = unpack("B$blen", pack("H$hlen", $rawData));
 	          Log3 $iohash, 4, "$name: SD_WS_WH2_1 msg=$msg length:".length($bitData) ;
 	          Log3 $iohash, 4, "$name: SD_WS_WH2_1 bitdata: $bitData" ;
 	        } else{
-	        if ( $temptyp == "11111101" ) {
+	        if ( $temptyp eq '11111101' ) {
 	          $rawData = SD_WS_WH2SHIFT($rawData);
 	          $rawData = SD_WS_WH2SHIFT($rawData);
 	          $msg = $msg_vor.$rawData;
@@ -882,7 +906,7 @@ sub SD_WS_Parse($$)
 	          }
 	      }
 	
-	      if( $temptyp == "11111111" ) {
+	      if( $temptyp eq '11111111' ) {
 	            $vorpre = 8;
 	          }else{
 	            Log3 $iohash, 4, "$name: SD_WS_WH2_4 Error kein WH2: Typ: $temptyp" ;
@@ -1010,7 +1034,7 @@ sub SD_WS_Parse($$)
 	return "" if(IsIgnored($name));
 
 	if (defined $temp) {
-		if ($temp < -30 || $temp > 70) {
+		if (($temp < -30 || $temp > 70) && $protocol ne '106') { # not forBBQ temperature sensor GT-TMBBQ-01s
 			Log3 $iohash, 3, "$ioname: SD_WS_Parse $deviceCode - ERROR temperature $temp";
 			return "";  
 		}
@@ -1109,7 +1133,7 @@ sub SD_WS_Parse($$)
 
 	readingsBeginUpdate($hash);
 	readingsBulkUpdate($hash, "state", $state);
-	readingsBulkUpdate($hash, "temperature", $temp)  if (defined($temp) && ($temp > -60 && $temp < 70 ));
+	readingsBulkUpdate($hash, "temperature", $temp)  if (defined($temp) && (($temp > -60 && $temp < 70 ) || $protocol eq '106'));
 	readingsBulkUpdate($hash, "humidity", $hum)  if (defined($hum) && ($hum > 0 && $hum < 100 )) ;
 	readingsBulkUpdate($hash, "windspeed", $windspeed)  if (defined($windspeed)) ;
 	readingsBulkUpdate($hash, "batteryState", $bat) if (defined($bat) && length($bat) > 0) ;
@@ -1214,10 +1238,11 @@ sub SD_WS_WH2SHIFT($){
   <b>Known models:</b>
   <ul>
     <li>Atech wireless weather station</li>
+    <li>BBQ temperature sensor GT-TMBBQ-01s (transmitter), GT-TMBBQ-01e (receiver)</li>
     <li>Bresser 7009994</li>
     <li>BresserTemeo</li>
     <li>Conrad S522</li>
-	<li>EuroChron EFTH-800 (temperature and humidity sensor)</li>
+    <li>EuroChron EFTH-800, EFS-3110A (temperature and humidity sensor)</li>
     <li>NC-3911, NC-3912 refrigerator thermometer</li>
 		<li>Opus XT300</li>
     <li>PV-8644 infactory Poolthermometer</li>
@@ -1317,10 +1342,11 @@ sub SD_WS_WH2SHIFT($){
   <b>Unterst&uumltzte Modelle:</b><br><br>
   <ul>
     <li>Atech Wetterstation</li>
+    <li>BBQ Temperatur Sensor GT-TMBBQ-01s (Sender), GT-TMBBQ-01e (Empfaenger)</li>
     <li>Bresser 7009994</li>
     <li>BresserTemeo</li>
     <li>Conrad S522</li>
-		<li>EuroChron EFTH-800 (Temperatur- und Feuchtigkeitssensor)</li>
+    <li>EuroChron EFTH-800, EFS-3110A (Temperatur- und Feuchtigkeitssensor)</li>
     <li>NC-3911, NC-3912 digitales Kuehl- und Gefrierschrank-Thermometer</li>
 		<li>Opus XT300</li>
     <li>PV-8644 infactory Poolthermometer</li>
