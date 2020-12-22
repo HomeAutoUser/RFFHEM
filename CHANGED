@@ -1,3 +1,10 @@
+2020-12-22 - Update 14_SD_WS07.pm
+
+  * replaced " with ' in strings without a variable (PerlCritic)
+  * replaced hard tabs (PerlCritic)
+  * replaced return undef with return and added return (PerlCritic)
+  * revised commandref
+  * correction of spelling errors
 2020-12-20 - Decoding and sending protocol 24 (#915)
 
   SD_ProtocolData.pm: change protocol u24 to P24
