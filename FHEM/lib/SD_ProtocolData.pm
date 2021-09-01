@@ -1,5 +1,5 @@
 ###########################################################################################################################################
-# $Id: SD_ProtocolData.pm 3.4.4 2021-08-08 16:56:40Z HomeAutoUser $
+# $Id: SD_ProtocolData.pm 3.4.4 2021-08-29 21:54:48Z elektron-bbs $
 # The file is part of the SIGNALduino project.
 # All protocol definitions are contained in this file.
 #
@@ -71,7 +71,7 @@
 ##### notice #### or #### info ############################################################################################################
 # !!! Between the keys and values ​​no tabs, please use spaces !!!
 # !!! Please use first unused id for new protocols !!!
-# ID´s are currently unused: 107 - 
+# ID´s are currently unused: 116 - 
 # ID´s need to be revised (preamble u): 5|19|21|22|23|25|28|31|36|40|52|59|63
 ###########################################################################################################################################
 # Please provide at least three messages for each new MU/MC/MS protocol and a URL of issue in GitHub or discussion in FHEM Forum
@@ -86,7 +86,7 @@ package lib::SD_ProtocolData;
   use strict;
   use warnings;
 
-  our $VERSION = '1.33';
+  our $VERSION = '1.35';
 
   our %protocols = (
     "0" =>  ## various weather sensors (500 | 9100)
@@ -1789,25 +1789,24 @@ package lib::SD_ProtocolData;
         #length_max      => '',     # missing
         filterfunc      => 'SIGNALduino_filterMC',
       },
-    "64"  =>  ## WH2
-              # no decode!   MU;P0=-32001;P1=457;P2=-1064;P3=1438;D=0123232323212121232123232321212121212121212323212121232321;CP=1;R=63;
-              # no decode!   MU;P0=-32001;P1=473;P2=-1058;P3=1454;D=0123232323212121232123232121212121212121212121232321212321;CP=1;R=51;
-              # no value!    MU;P0=134;P1=-113;P3=412;P4=-1062;P5=1379;D=01010101013434343434343454345454345454545454345454545454343434545434345454345454545454543454543454345454545434545454345;CP=3;
+    "64"  =>  ## Fine Offset Electronics WH2, WH2A Temperature/Humidity sensor
+              # T: 17.4 H: 74   MU;P0=-28888;P1=461;P2=-1012;P3=1440;D=01212121212121232123232123212121232121232323232123212321212123232123232123212323232321212123232323232321212121;CP=1;R=202;
+              # T: 28.3 H: 42   MU;P0=-25696;P1=479;P2=-985;P3=1461;D=01212121212121232123232123212121232121232323212323232121232121232321232123212323232323232121212321232321232323;CP=1;R=215;
+              # T: 23   H: 64   MU;P0=134;P1=-113;P3=412;P4=-1062;P5=1379;D=01010101013434343434343454345454345454545454345454545454343434545434345454345454545454543454543454345454545434545454345;CP=3;
       {
         name            => 'WH2',
         comment         => 'temperature / humidity sensor',
         id              => '64',
-        knownFreqs      => '',
+        knownFreqs      => '433.92',
         one             => [1,-2],
         zero            => [3,-2],
         clockabs        => 490,
         clientmodule    => 'SD_WS',
         modulematch     => '^W64*',
         preamble        => 'W64#',
-        postamble       => '',
-        #clientmodule    => '',
+        clientmodule    => 'SD_WS',
         length_min      => '48',
-        length_max      => '54',
+        length_max      => '56',
       },
     "65"  =>  ## Homeeasy
               # on | vHE_EU   MS;P1=231;P2=-1336;P4=-312;P5=-8920;D=15121214141412121212141414121212121414121214121214141212141212141212121414121414141212121214141214121212141412141212;CP=1;SP=5;
@@ -2983,6 +2982,26 @@ package lib::SD_ProtocolData;
         clientmodule    => 'SD_UT',
         length_min      => '12',
         length_max      => '12',
+      },
+    "115" =>  ## BRESSER 6-in-1 Weather Center, Bresser new 5-in-1 sensors 7002550
+              # https://github.com/RFD-FHEM/RFFHEM/issues/607#issuecomment-888542022 @ Alex-S1981 2021-07-28
+              # The sensor alternately sends two different messages every 12 seconds.
+              # T: 15.2 H: 93 W: 0.8   MN;D=3BF120B00C1618FF77FF0458152293FFF06B0000;R=242;
+              # W: 0.6 R: 5.6          MN;D=1E6C20B00C1618FF99FF0458FFFFA9FF015B0000;R=241;
+      {
+        name            => 'Bresser 6in1',
+        comment         => 'BRESSER 6-in-1 weather center',
+        id              => '115',
+        knownFreqs      => '868.35',
+        datarate        => '8.207',
+        sync            => '2DD4',
+        modulation      => '2-FSK',
+        rfmode          => 'Bresser_6in1',
+        register        => ['0001','0246','0344','042D','05D4','06FF','07C0','0802','0D21','0E65','0FE8','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
+        preamble        => 'W115#',
+        clientmodule    => 'SD_WS',
+        length_min      => '36',
+        method          => \&lib::SD_Protocols::ConvBresser_6in1,
       },
     ########################################################################
     #### ###  register informations from other hardware protocols  #### ####
