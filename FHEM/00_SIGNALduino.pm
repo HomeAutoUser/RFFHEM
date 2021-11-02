@@ -302,6 +302,7 @@ sub SIGNALduino_Initialize {
             .' cc1101_reg_user'
             ." debug:0$dev"
             ." development:0$dev"
+            .' disable:0,1'
             .' doubleMsgCheck_IDs'
             .' eventlogging:0,1'
             .' flashCommand'
@@ -398,8 +399,7 @@ sub SIGNALduino_Define {
       return $msg;
     }
   }
-  
-  #$hash->{CMDS} = '';
+
   $hash->{Clients}    = $clientsSIGNALduino;
   $hash->{MatchList}  = \%matchListSIGNALduino;
   $hash->{DeviceName} = $dev;
@@ -3015,9 +3015,17 @@ sub SIGNALduino_Parse($$$$@) {
 ############################# package main
 sub SIGNALduino_Ready {
   my ($hash) = @_;
+  my $name = $hash->{NAME};
 
   if ($hash->{STATE} eq 'disconnected') {
     $hash->{DevState} = 'disconnected';
+
+    ### one defined device with attribute disable must not connect with DevIo_OpenDev
+    if($attr{$name}{disable} && $attr{$name}{disable} eq 1) {
+      SIGNALduino_CloseDevice($hash);
+      return;
+    }
+
     return DevIo_OpenDev($hash, 1, \&SIGNALduino_DoInit, \&SIGNALduino_Connect)
   }
 
@@ -3091,6 +3099,13 @@ sub SIGNALduino_Attr(@) {
     } else {
       $hash->{MatchList} = \%matchListSIGNALduino;                      ## Set defaults
       $hash->{logMethod}->($name, 2, $name .": Attr, $aVal: not a HASH using defaults") if( $aVal );
+    }
+  ### Change disable ###
+  } elsif( $aName eq 'disable' ) {
+    if ($cmd eq 'set' && $aVal == 1) {
+      SIGNALduino_CloseDevice($hash);
+    } elsif ($cmd eq 'set' && $aVal == 0 || $cmd eq 'del') {
+      SIGNALduino_Set_reset($hash);
     }
   }
   ## Change verbose
