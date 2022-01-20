@@ -1,5 +1,5 @@
 ###########################################################################################################################################
-# $Id: SD_ProtocolData.pm 3.4.4 2021-12-29 16:12:11Z elektron-bbs $
+# $Id: SD_ProtocolData.pm 3.4.4 2022-01-15 12:25:06Z elektron-bbs $
 # The file is part of the SIGNALduino project.
 # All protocol definitions are contained in this file.
 #
@@ -71,7 +71,7 @@
 ##### notice #### or #### info ############################################################################################################
 # !!! Between the keys and values ​​no tabs, please use spaces !!!
 # !!! Please use first unused id for new protocols !!!
-# ID´s are currently unused: 117 - 
+# ID´s are currently unused: 118 - 
 # ID´s need to be revised (preamble u): 5|19|21|22|23|25|28|31|36|40|52|59|63
 ###########################################################################################################################################
 # Please provide at least three messages for each new MU/MC/MS/MN protocol and a URL of issue in GitHub or discussion in FHEM Forum
@@ -86,7 +86,7 @@ package lib::SD_ProtocolData;
   use strict;
   use warnings;
 
-  our $VERSION = '1.40';
+  our $VERSION = '1.42';
 
   our %protocols = (
     "0" =>  ## various weather sensors (500 | 9100)
@@ -2860,10 +2860,43 @@ package lib::SD_ProtocolData;
         length_min      => '22',
         length_max      => '22',
       },
-
-    # "107" => reserved @elektron-bbs for Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100 Soil Moisture Sensor
-
-    "108" =>  ## BRESSER 5-in-1 Weather Center, Bresser Professional Rain Gauge - elektron-bbs 2021-05-02
+    "107"	=>	## Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100 Soil Moisture Sensor use with FSK 433.92 MHz
+              # https://forum.fhem.de/index.php/topic,109056.0.html
+              # SD_WS_107_H_00C6BF H: 31  MN;D=5100C6BF107F1FF8BBFFFFFFEE22;R=14;
+              # SD_WS_107_H_00C6BF H: 34  MN;D=5100C6BF107F22F8C3FFFFFF0443;R=14;
+              # SD_WS_107_H_00C6BF H: 35  MN;D=5100C6BF107F23F8C7FFFFFF5DA1;R=14;
+      {
+        name            => 'WH51 433.92 MHz',
+        comment         => 'Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100 Soil moisture sensor',
+        id              => '107',
+        knownFreqs      => '433.92',
+        datarate        => '17257.69',
+        sync            => '2DD4',
+        modulation      => '2-FSK',
+        regexMatch      => qr/^51/, # Family code 0x51 (ECOWITT/FineOffset WH51)
+        preamble        => 'W107#',
+        register        => ['0001','022E','0343','042D','05D4','060E','0780','0800','0D10','0EB0','0F71','10A9','115C','1202','1322','14F8','1543','1916','1B43','1C68'],
+        rfmode          => 'Fine_Offset_WH51_434',
+        clientmodule    => 'SD_WS',
+        length_min      => '28',
+      },
+    "107.1"	=>	# Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100 Soil Moisture Sensor use with FSK 868.35 MHz
+      {
+        name            => 'WH51 868.35 MHz',
+        comment         => 'Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100 Soil moisture sensor',
+        id              => '107.1',
+        knownFreqs      => '868.35',
+        datarate        => '17257.69',
+        sync            => '2DD4',
+        modulation      => '2-FSK',
+        regexMatch      => qr/^51/, # Family code 0x51 (ECOWITT/FineOffset WH51)
+        preamble        => 'W107#',
+        register        => ['0001','022E','0343','042D','05D4','060E','0780','0800','0D21','0E65','0FE8','10A9','115C','1202','1322','14F8','1543','1916','1B43','1C68'],
+        rfmode          => 'Fine_Offset_WH51_868',
+        clientmodule    => 'SD_WS',
+        length_min      => '28',
+      },
+    "108" =>  ## BRESSER 5-in-1 Weather Center, Bresser Professional Rain Gauge, Fody E42, Fody E43 - elektron-bbs 2021-05-02
               # https://github.com/RFD-FHEM/RFFHEM/issues/607
               # https://forum.fhem.de/index.php/topic,106594.msg1151467.html#msg1151467
               # T: 11 H: 43 W: 1.7 R: 7.6     MN;D=E6837FD73FE8EFEFFEBC89FFFF197C8028C017101001437600000001;R=230;
@@ -2873,10 +2906,10 @@ package lib::SD_ProtocolData;
               # T: 8 H: 88 W: 1.3 R: 364.8     MN;D=E6527FEB0FECEF7FFF77B7C9FF19AD8014F013108000884836000003;R=211;
       {
         name            => 'Bresser 5in1',
-        comment         => 'BRESSER 5-in-1 weather center, rain gauge',
+        comment         => 'BRESSER 5-in-1 weather center, rain gauge, Fody E42, Fody E43',
         id              => '108',
         knownFreqs      => '868.35',
-        datarate        => '8.207',
+        datarate        => '8.232',
         sync            => '2DD4',
         modulation      => '2-FSK',
         rfmode          => 'Bresser_5in1',
@@ -3046,8 +3079,44 @@ package lib::SD_ProtocolData;
         length_min      => '36',
         method          => \&lib::SD_Protocols::ConvBresser_6in1,
       },
+    "116"	=>  ## Thunder and lightning sensor Fine Offset WH57, aka Froggit DP60, aka Ambient Weather WH31L use with FSK 433.92 MHz
+              # https://forum.fhem.de/index.php/topic,122527.0.html
+              # I: lightning   D:  6  MN;D=5780C65505060F6C78;R=39;
+              # I: lightning   D: 20  MN;D=5780C655051401C4D0;R=37;
+              # I: disturbance D: 63  MN;D=5740C655053F0A7272;R=39;
+      {
+        name            => 'WH57',
+        comment         => 'Fine Offset WH57, Ambient Weather WH31L, Froggit DP60 Thunder and Lightning sensor',
+        id              => '116',
+        knownFreqs      => '433.92',
+        datarate        => '17.257',
+        sync            => '2DD4',
+        modulation      => '2-FSK',
+        regexMatch      => qr/^57/, # Family code 0x57 (FineOffset WH57)
+        preamble        => 'W116#',
+        register        => ['0001','022E','0343','042D','05D4','0609','0780','0800','0D10','0EB0','0F71','10A9','115C','1202','1322','14F8','1543','1916','1B43','1C68'],
+        rfmode          => 'Fine_Offset_WH57_434',
+        clientmodule    => 'SD_WS',
+        length_min      => '18',
+      },
+    "116.1"	=>  ## Thunder and lightning sensor Fine Offset WH57, aka Froggit DP60, aka Ambient Weather WH31L use with FSK 868.35 MHz
+      {
+        name            => 'WH57',
+        comment         => 'Fine Offset WH57, Ambient Weather WH31L, Froggit DP60 Thunder and Lightning sensor',
+        id              => '116.1',
+        knownFreqs      => '868.35',
+        datarate        => '17.257',
+        sync            => '2DD4',
+        modulation      => '2-FSK',
+        regexMatch      => qr/^57/, # Family code 0x57 (FineOffset WH57)
+        preamble        => 'W116#',
+        register        => ['0001','022E','0343','042D','05D4','0609','0780','0800','0D21','0E65','0FE8','10A9','115C','1202','1322','14F8','1543','1916','1B43','1C68'],
+        rfmode          => 'Fine_Offset_WH57_868',
+        clientmodule    => 'SD_WS',
+        length_min      => '18',
+      },
 
-    # "116" => reserved @elektron-bbs for Fine Offset WH57, Froggit DP60 Thunder and Lightning sensor
+    # "117" => reserved @elektron-bbs for BRESSER 7-in-1 Weather Center
 
     ########################################################################
     #### ###  register informations from other hardware protocols  #### ####
