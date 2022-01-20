@@ -21,18 +21,18 @@ InternalTimer(time(), sub {
     my @rfmodes = split (",",$attrRFmodes);
     
     # Itmes must be in sorted order
-    is(\@rfmodes,array {
+    is(\@rfmodes,bag {
             item 'rfmode:Avantek';
             item 'Bresser_5in1';
             item 'Bresser_6in1';
+            item 'Fine_Offset_WH51_434';
+            item 'Fine_Offset_WH51_868';
             item 'KOPP_FC';
             item 'Lacrosse_mode1';
             item 'Lacrosse_mode2';
             item 'PCA301';
             item 'Rojaflex';
-            item 'SlowRF';
-            
-            etc();
+            item 'SlowRF';            
         }    
      ,q[Test rfmodes and order]);
    

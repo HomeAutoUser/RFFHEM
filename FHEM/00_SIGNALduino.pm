@@ -1,5 +1,5 @@
-# $Id: 00_SIGNALduino.pm v3.5.2 2021-12-19 18:11:16Z elektron-bbs $
-# v3.5.2 - https://github.com/RFD-FHEM/RFFHEM/tree/master
+# $Id: 00_SIGNALduino.pm v3.5.3 2022-01-17 20:29:25Z sidey79 $
+# v3.5.3 - https://github.com/RFD-FHEM/RFFHEM/tree/master
 # The module is inspired by the FHEMduino project and modified in serval ways for processing the incoming messages
 # see http://www.fhemwiki.de/wiki/SIGNALDuino
 # It was modified also to provide support for raw message handling which can be send from the SIGNALduino
@@ -8,18 +8,18 @@
 #
 # 2014-2015  S.Butzek, N.Butzek
 # 2016-2019  S.Butzek, Ralf9
-# 2019-2021  S.Butzek, HomeAutoUser, elektron-bbs
+# 2019-2022  S.Butzek, HomeAutoUser, elektron-bbs
 
 
 package main;
 use strict;
 use warnings;
-#use version 0.77; our $VERSION = version->declare('v3.5.2');
+#use version 0.77; our $VERSION = version->declare('v3.5.3+20220116');
 
 my $missingModulSIGNALduino = '';
 
 use DevIo;
-require "99_Utils.pm" if (!defined $modules{"Utils"} || !exists $modules{"Utils"}{"LOADED"} );
+require "99_Utils.pm" if (!defined $modules{"Utils"} || !exists $modules{"Utils"}{"LOADED"} ); ## no critic
 use Carp;
 no warnings 'portable';
 
@@ -38,7 +38,7 @@ use List::Util qw(first);
 
 
 use constant {
-  SDUINO_VERSION                  => '3.5.2+20211219',  # Datum wird automatisch bei jedem pull request aktualisiert
+  SDUINO_VERSION                  => '3.5.2+20220117',  # Datum wird automatisch bei jedem pull request aktualisiert
   SDUINO_INIT_WAIT_XQ             => 1.5,     # wait disable device
   SDUINO_INIT_WAIT                => 2,
   SDUINO_INIT_MAXRETRY            => 3,
@@ -2038,7 +2038,7 @@ sub SIGNALduino_PatternExists {
     $i++;
   }
 
-  sub cartesian_product {
+  sub cartesian_product { ## no critic
     use List::Util qw(reduce);
     reduce {
       [ map {
@@ -2592,7 +2592,7 @@ sub SIGNALduino_Parse_MU {
         } else {
           $hash->{logMethod}->($name, 5, "$name: Parse_MU, for MU protocol id $id, applying filterfunc $method");
 
-          no strict "refs";
+          no strict "refs"; 
           (my $count_changes,$rawData,my %patternListRaw_tmp) = $method->($name,$id,$rawData,%patternListRaw);
           use strict "refs";
 
@@ -4772,11 +4772,32 @@ USB-connected devices (SIGNALduino):<br>
   <li>rfmode<br>
     Configures the RF transceiver of the SIGNALduino (CC1101). The available arguments:
     <ul>
+      <li>Avantek<br>
+        Modulation 2-FSK, Datarate=50.087 kbps, Sync Word=0869, FIFO-THR=8 Byte, Frequency 433.3 MHz
+        <ul><small>Example: AVANTEK Wireless Digital Door Bell</small></ul>
+      </li>
       <li>Bresser_5in1<br>
-        modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, FIFO-THR=28 Byte, frequency 868.35 MHz
+        Modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, Packet Length=26 Byte, Frequency 868.35 MHz
+        <ul><small>Example: BRESSER 5-in-1 weather center, BRESSER rain gauge, Fody E42, Fody E43</small></ul>
       </li>
       <li>Bresser_6in1<br>
         modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, FIFO-THR=20 Byte, frequency 868.35 MHz
+      </li>
+      <li>Fine_Offset_WH51_434<br>
+        Modulation 2-FSK, Datarate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequency 433.92 MHz
+        <ul><small>Example: Soil moisture sensor Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100</small></ul>
+      </li>
+      <li>Fine_Offset_WH51_868<br>
+        Modulation 2-FSK, Datarate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequency 868.35 MHz
+        <ul><small>Example: Soil moisture sensor Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100</small></ul>
+      </li>
+      <li>Fine_Offset_WH57_434<br>
+        Modulation 2-FSK, Datarate=17.26 kbps, Sync Word=2DD4, Packet Length=9 Byte, Frequency 433.92 MHz
+        <ul><small>Example: Thunder and lightning sensor Fine Offset WH57, Froggit DP60, Ambient Weather WH31L</small></ul>
+      </li>
+      <li>Fine_Offset_WH57_868<br>
+        Modulation 2-FSK, Datarate=17.26 kbps, Sync Word=2DD4, Packet Length= Byte, Frequency 868.35 MHz
+        <ul><small>Example: Thunder and lightning sensor Fine Offset WH57, Froggit DP60, Ambient Weather WH31L</small></ul>
       </li>
       <li>KOPP_FC<br>
         modulation GFSK, Datarate=4.7855 kbps, Sync Word=AA54, frequency 868.3MHz
@@ -5330,11 +5351,32 @@ USB-connected devices (SIGNALduino):<br>
   <li>rfmode<br>
     Konfiguriert den RF Transceiver des SIGNALduino (CC1101). Verf&uuml;gbare Argumente sind:
     <ul>
+      <li>Avantek<br>
+        Modulation 2-FSK, Datarate=50.087 kbps, Sync Word=0869, FIFO-THR=8 Byte, Frequenz 433.3 MHz
+        <ul><small>Example: AVANTEK Funk-Türklingel</small></ul>
+      </li>
       <li>Bresser_5in1<br>
-        Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, FIFO-THR=28 Byte, Frequenz 868.35 MHz
+        Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, Packet Length=26 Byte, Frequenz 868.35 MHz
+        <ul><small>Beispiel: BRESSER 5-in-1 Wetter Center, BRESSER Profi Regenmesser, Fody E42, Fody E43</small></ul>
       </li>
       <li>Bresser_6in1<br>
         Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, FIFO-THR=20 Byte, Frequenz 868.35 MHz
+      </li>
+      <li>Fine_Offset_WH51_434<br>
+        Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequenz 433.92 MHz
+        <ul><small>Beispiel: Bodenfeuchtesensor Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100</small></ul>
+      </li>
+      <li>Fine_Offset_WH51_868<br>
+        Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequenz 868.35 MHz
+        <ul><small>Beispiel: Bodenfeuchtesensor Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100</small></ul>
+      </li>
+      <li>Fine_Offset_WH57_434<br>
+        Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=9 Byte, Frequenz 433.92 MHz
+        <ul><small>Beispiel: Gewittersensor Fine Offset WH57, Froggit DP60, Ambient Weather WH31L</small></ul>
+      </li>
+      <li>Fine_Offset_WH57_868<br>
+        Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=9 Byte, Frequenz 868.35 MHz
+        <ul><small>Beispiel: Gewittersensor Fine Offset WH57, Froggit DP60, Ambient Weather WH31L</small></ul>
       </li>
       <li>KOPP_FC<br>
         Modulation GFSK, Datenrate=4.7855 kbps, Sync Word=AA54, Frequenz 868.3MHz
@@ -5388,7 +5430,7 @@ USB-connected devices (SIGNALduino):<br>
   </li><br>
    <a name="MatchList"></a>
   <li>MatchList<br>
-    Dieses Attribut erm&oumlglicht es die Modul Match Tabelle um weitere Eintr&aumlge zu erweitern. Dazu m&uumlssen die weiteren Eintr&aumlge im PERL Hash format angegeben werden:</li>
+    Dieses Attribut erm&oumlglicht es die Modul Match Tabelle um weitere Eintr&aumlge zu erweitern. Dazu m&uumlssen die weiteren Eintr&aumlge im PERL Hash format angegeben werden:
     <ul>
       <li>Format: { 'Nummer:Modul' => 'Protokoll-Pattern' , 'N&aumlchsteNummer:N&aumlchstesModul' => 'Protokoll-Pattern' , ... }</li>
       <li>Beispiel: { '34:MyModule' => '^u98#.{8}' , '35:MyModule2' => '^u99#.{10}' }</li>
