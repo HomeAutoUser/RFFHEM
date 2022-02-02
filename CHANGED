@@ -1,21 +1,51 @@
-2022-01-20 - Update 14_SD_UT.pm - fix buttons P90 (#1060)
+2022-02-02 - new protocol 117 for BRESSER 7-in-1 Weather Center (#1072)
 
+  14_SD_WS.pm
+    add 117 for decoding of messages
+  00_SIGNALduino.pm
+    update commandref
+  SD_ProtocolData.pm
+    add definition protocol 117
+  SD_Protocols.pm
+    add sub ConvBresser_7in1 for XOR over all nibbles and check
+    add sub LFSR_digest16 linear-feedback shift register
+  README.md
+    add BRESSER 7-in-1
+
+2022-01-25 - 00_SIGNALduino.pm
+- Correct Versionnumber
+
+2022-01-25 - Update {Match} regex for Hideki Module (#1071)
+* 14_Hideki.pm
+- Match Regex angepasst
+- Subs als Coderef hinterlegt
+* 09_ParseData.t
+- ParseData Test mit Testdaten hinterlegt
+
+2022-01-24 - Prüfung ergänzt, welche dmsg gegen den Match Eintrag verifiziert (#1065)
+* lib/Test2/SIGNALduino/RDmsg.pm
+- Prüfung ergänzt, welche dmsg gegen den Match eintrag verifiziert
+* t/FHEM/10_SD_Rojaflex
+- marked to short testdata as failable for match check
 * 14_SD_UT.pm
-  Functions refs saved as coderefs
+Match Regex angepast
+56 fehlte
+91.1 Syntax korrigiert
 
-* 09_parseData.t
-  Umgestellt auf Nutzung Test2::SIGNALduino::RDmsg
-  Fehlerhafte Testdaten eingebunden
-2022-01-17 - Version 3.5.3+ erzeugen (#1064)
+2022-01-23 - Version 3.5.4+ hinterlegt (#1069)
+* Version 3.5.4+ hinterlegt
 
-* 00_SIGNALduino.pm
-  Version auf 3.5.3+ geändert
+2022-01-23 - Master 3.5.3 (#1068)
 
-2022-01-17 - SD_Protocols.pm
+Release 3.5.3 
+    00_SIGNALduino.pm:
+          feature: Handling of missing modules changed
+    
+    SD_Protocols.pm
+          feature: Graceful load JSON and Digest:CRC Modules (#1066)
 
-ID Zeile hinterlegt
-2022-01-16 - Version 3.5.2 erzeugen (#1063)
-
+    14_SD_UT.pm
+          bugfix: fix buttons P90 (#1060)
 Release 3.5.2 
      10_SD_Rojaflex.pm 
           new: Module for rojaflex remote controls

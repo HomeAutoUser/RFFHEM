@@ -1,5 +1,5 @@
-# $Id: 00_SIGNALduino.pm v3.5.3 2022-01-17 20:29:25Z sidey79 $
-# v3.5.3 - https://github.com/RFD-FHEM/RFFHEM/tree/master
+# $Id: 00_SIGNALduino.pm v3.5.4 2022-02-01 20:02:34Z elektron-bbs $
+# v3.5.4 - https://github.com/RFD-FHEM/RFFHEM/tree/master
 # The module is inspired by the FHEMduino project and modified in serval ways for processing the incoming messages
 # see http://www.fhemwiki.de/wiki/SIGNALDuino
 # It was modified also to provide support for raw message handling which can be send from the SIGNALduino
@@ -14,9 +14,9 @@
 package main;
 use strict;
 use warnings;
-#use version 0.77; our $VERSION = version->declare('v3.5.3+20220116');
+#use version 0.77; our $VERSION = version->declare('v3.5.4');
 
-my $missingModulSIGNALduino = '';
+my $missingModulSIGNALduino = ' ';
 
 use DevIo;
 require "99_Utils.pm" if (!defined $modules{"Utils"} || !exists $modules{"Utils"}{"LOADED"} ); ## no critic
@@ -24,8 +24,8 @@ use Carp;
 no warnings 'portable';
 
 eval {use Data::Dumper qw(Dumper);1};
-eval {use Digest::CRC;1 or $missingModulSIGNALduino .= 'Digest::CRC '};
-eval {use JSON;1 or $missingModulSIGNALduino .= 'JSON '};
+
+use constant HAS_JSON      => defined  eval { require JSON; JSON->import; };
 
 eval {use Scalar::Util qw(looks_like_number);1};
 eval {use Time::HiRes qw(gettimeofday);1} ;
@@ -38,7 +38,7 @@ use List::Util qw(first);
 
 
 use constant {
-  SDUINO_VERSION                  => '3.5.2+20220117',  # Datum wird automatisch bei jedem pull request aktualisiert
+  SDUINO_VERSION                  => '3.5.4+20220201',  # Datum wird automatisch bei jedem pull request aktualisiert
   SDUINO_INIT_WAIT_XQ             => 1.5,     # wait disable device
   SDUINO_INIT_WAIT                => 2,
   SDUINO_INIT_MAXRETRY            => 3,
@@ -295,15 +295,17 @@ sub SIGNALduino_Initialize {
     Log3 'SIGNALduino', 4, qq[SIGNALduino_Initialize: rfmode list: @rfmode];
   }
 
+  $hash->{DefFn}          = \&SIGNALduino_Define;
+  $hash->{UndefFn}        = \&SIGNALduino_Undef;
+
+
 # Provider
   $hash->{ReadFn}  = \&SIGNALduino_Read;
   $hash->{WriteFn} = \&SIGNALduino_Write;
   $hash->{ReadyFn} = \&SIGNALduino_Ready;
 
 # Normal devices
-  $hash->{DefFn}          = \&SIGNALduino_Define;
   $hash->{FingerprintFn}  = \&SIGNALduino_FingerprintFn;
-  $hash->{UndefFn}        = \&SIGNALduino_Undef;
   $hash->{GetFn}          = \&SIGNALduino_Get;
   $hash->{SetFn}          = \&SIGNALduino_Set;
   $hash->{AttrFn}         = \&SIGNALduino_Attr;
@@ -1065,7 +1067,7 @@ sub SIGNALduino_Get_FhemWebList {
 sub SIGNALduino_Get_availableFirmware {
   my ($hash, @a) = @_;
 
-  if ($missingModulSIGNALduino =~ m/JSON/ )
+  if ( !HAS_JSON )
   {
     $hash->{logMethod}->($hash->{NAME}, 1, "$hash->{NAME}: get $a[0] failed. Please install Perl module JSON. Example: sudo apt-get install libjson-perl");
     return "$a[0]: \n\nFetching from github is not possible. Please install JSON. Example:<br><code>sudo apt-get install libjson-perl</code>";
@@ -2940,7 +2942,8 @@ sub SIGNALduino_Parse_MN {
     my $method = $hash->{protocolObject}->getProperty($id,'method',undef);
     my @methodReturn = defined $method ? $method->($hash->{protocolObject},$rawData) : ($rawData);
     if ($#methodReturn != 0) {
-      $hash->{logMethod}->($name, 4, qq{$name: Parse_MN, Error! method $methodReturn[1]});
+      my $vl = $methodReturn[1] =~ /missing\smodule/xms ? 1 : 4;
+      $hash->{logMethod}->($name, $vl, qq{$name: Parse_MN, Error! method $methodReturn[1]});
       next mnIDLoop;
     }
     $dmsg = sprintf('%s%s',$hash->{protocolObject}->checkProperty($id,'preamble',''),$methodReturn[0]);
@@ -3958,6 +3961,7 @@ sub SIGNALduino_githubParseHttpResponse {
   }
   elsif($data ne '' && defined($hardware))                                                                              # wenn die Abfrage erfolgreich war ($data enthaelt die Ergebnisdaten des HTTP Aufrufes)
   {
+
     my $json_array = decode_json($data);
     #print  Dumper($json_array);
     if ($param->{command} eq 'queryReleases') {
@@ -4783,6 +4787,9 @@ USB-connected devices (SIGNALduino):<br>
       <li>Bresser_6in1<br>
         modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, FIFO-THR=20 Byte, frequency 868.35 MHz
       </li>
+      <li>Bresser_7in1<br>
+        modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, Packet Length=22 Byte, frequency 868.35 MHz
+      </li>
       <li>Fine_Offset_WH51_434<br>
         Modulation 2-FSK, Datarate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequency 433.92 MHz
         <ul><small>Example: Soil moisture sensor Fine Offset WH51, ECOWITT WH51, MISOL/1, Froggit DP100</small></ul>
@@ -5352,7 +5359,7 @@ USB-connected devices (SIGNALduino):<br>
     Konfiguriert den RF Transceiver des SIGNALduino (CC1101). Verf&uuml;gbare Argumente sind:
     <ul>
       <li>Avantek<br>
-        Modulation 2-FSK, Datarate=50.087 kbps, Sync Word=0869, FIFO-THR=8 Byte, Frequenz 433.3 MHz
+        Modulation 2-FSK, Datenrate=50.087 kbps, Sync Word=0869, FIFO-THR=8 Byte, Frequenz 433.3 MHz
         <ul><small>Example: AVANTEK Funk-Türklingel</small></ul>
       </li>
       <li>Bresser_5in1<br>
@@ -5361,6 +5368,9 @@ USB-connected devices (SIGNALduino):<br>
       </li>
       <li>Bresser_6in1<br>
         Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, FIFO-THR=20 Byte, Frequenz 868.35 MHz
+      </li>
+      <li>Bresser_7in1<br>
+        Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, Packet Length=22 Byte, Frequenz 868.35 MHz
       </li>
       <li>Fine_Offset_WH51_434<br>
         Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequenz 433.92 MHz
