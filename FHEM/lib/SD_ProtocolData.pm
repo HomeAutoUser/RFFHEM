@@ -1,5 +1,5 @@
 ###########################################################################################################################################
-# $Id: SD_ProtocolData.pm 3.5.x 2022-01-30 10:19:30Z elektron-bbs $
+# $Id: SD_ProtocolData.pm 3.5.4 2022-05-30 20:10:51Z sidey79 $
 # The file is part of the SIGNALduino project.
 # All protocol definitions are contained in this file.
 #
@@ -86,7 +86,7 @@ package lib::SD_ProtocolData;
   use strict;
   use warnings;
 
-  our $VERSION = '1.44';
+  our $VERSION = '1.45';
 
   our %protocols = (
     "0" =>  ## various weather sensors (500 | 9100)
@@ -573,7 +573,7 @@ package lib::SD_ProtocolData;
         format           => 'twostate',
         preamble         => 'P13#',
         clientmodule     => 'FLAMINGO',
-        #modulematch      => '',
+        #      => '',
         length_min       => '24',
         length_max       => '24',
       },
@@ -2324,9 +2324,12 @@ package lib::SD_ProtocolData;
               # https://github.com/RFD-FHEM/RFFHEM/issues/266
               # Ch:1 T: 8.7 H: 85 Bat:ok   MU;P0=-509;P1=474;P2=-260;P3=228;P4=718;P5=-745;D=01212303030303012301230123012301230301212121230454545453030303012123030301230303012301212123030301212303030303030303012303012303012303012301212303030303012301230123012301230301212121212454545453030303012123030301230303012301212123030301212303030303030303;CP=3;R=46;O;
               # Ch:1 T: 7.6 H: 89 Bat:ok   MU;P0=7944;P1=-724;P2=742;P3=241;P4=-495;P5=483;P6=-248;D=01212121343434345656343434563434345634565656343434565634343434343434345634345634345634343434343434343434345634565634345656345634343456563421212121343434345656343434563434345634565656343434565634343434343434345634345634345634343434343434343434345634565634;CP=3;R=47;O;
+              # TFA Wetterstation Weather PRO, Windmesser TFA 30.3251.10 2022-04-10 @ deeb
+              # https://forum.fhem.de/index.php/topic,107998.msg1217772.html#msg1217772
+              # Ch:1 wS: 5.9 wD: 58 Bat:ok   MU;P0=-28464;P1=493;P2=-238;P3=244;P4=-492;P5=728;P6=-732;D=01212123434343412121212343434343434123434343434343412121234121234343434343412121234123412343412123434343456565656343434341234121212121212121212123434343412121212343434343434123434343434343412121234121234343434343412121234123412343412123434343456565656343;CP=3;R=20;O;
       {
         name            => 'TFA 30.3222.02',
-        comment         => 'Combisensor for Weatherstation TFA 35.1140.01',
+        comment         => 'Combisensor TFA 30.3222.02, Windsensor TFA 30.3251.10',
         id              => '85',
         knownFreqs      => '',
         one             => [2,-1],
@@ -3070,11 +3073,11 @@ package lib::SD_ProtocolData;
         comment         => 'BRESSER 6-in-1 weather center',
         id              => '115',
         knownFreqs      => '868.35',
-        datarate        => '8.207',
+        datarate        => '8.232',
         sync            => '2DD4',
         modulation      => '2-FSK',
         rfmode          => 'Bresser_6in1',
-        register        => ['0001','0246','0344','042D','05D4','06FF','07C0','0802','0D21','0E65','0FE8','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
+        register        => ['0001','022E','0344','042D','05D4','0612','07C0','0800','0D21','0E65','0FE8','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
         preamble        => 'W115#',
         clientmodule    => 'SD_WS',
         length_min      => '36',
@@ -3174,6 +3177,23 @@ package lib::SD_ProtocolData;
         length_min      => '24',
         length_max      => '25',
       },
+
+		"119"	=>	## Funkbus
+			#
+			{
+				name            => 'Funkbus',
+				comment         => 'only Typ 43',
+				id              => '119',
+				clockrange      => [490,520],			  # min , max
+				format          => 'manchester',	    
+				clientmodule    => 'IFB',
+				#modulematch     => '',
+				preamble        => 'J',
+				length_min      => '47',
+				length_max      => '52',
+				method          => \&lib::SD_Protocols::mcBit2Funkbus,
+			},
+
     ########################################################################
     #### ###  register informations from other hardware protocols  #### ####
 

@@ -24,7 +24,7 @@ Supported Devices / Protocols
 |BF-301 | Remote control|
 |benon (Semexo OHG) | Remote control (BH-P)|
 |BOSCH / Neff / Refsta Topdraft | Remote control (SF01 01319004, SF01 01319004 v2)|
-|BRESSER 5-in-1, 6-in-1, 7-in-1, Professional Rain Gauge, TemeoTrend | Weather Station, Rain Gauge, Thermo-/Hygro Sensor |
+|BRESSER 5-in-1, 6-in-1, 7-in-1, Professional Rain Gauge, TemeoTrend, SM60020 Soil moisture sensor | Weather Station, Rain Gauge, Thermo-/Hygro Sensor |
 |CAME TOP 432EV | Remote control |
 |CTW600, WH1080, WH2315 | Weather station |
 |Clarus | remote power socket|
@@ -92,7 +92,7 @@ Supported Devices / Protocols
 |technoline Weatherstation WS 6750/TX70DTH| Weather sensor and station |
 |TCM 234759 Tchibo | wireless bell |
 |TCM97001,Logilink, Pearl NC, and similar,Lifetec LT3594 | Weather sensor |
-|TFA 30.3200, 30.3208.02, 30.3209.02, 30.3221.02, 30.3222.02, 30.3228.02, 30.3229.02, 35.1140.01 | Weather sensors and stations |
+|TFA 30.3157, 30.3200, 30.3208.02, 30.3209.02, 30.3221.02, 30.3222.02, 30.3228.02, 30.3229.02, 30.3233.01, 30.3251.10, 35.1140.01 | Weather sensors and stations |
 |TS-K108W11 | wireless bell |
 |Techmar Garden Lights | Remote control |
 |Technoline TX3  | Weather sensor |
