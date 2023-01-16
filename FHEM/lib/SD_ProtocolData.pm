@@ -1,5 +1,4 @@
-###########################################################################################################################################
-# $Id: SD_ProtocolData.pm 3.5.4 2022-06-14 07:33:24Z HomeAutoUser $
+# $Id: SD_ProtocolData.pm 26975 2023-01-13 19:55:16Z elektron-bbs $
 # The file is part of the SIGNALduino project.
 # All protocol definitions are contained in this file.
 #
@@ -71,7 +70,7 @@
 ##### notice #### or #### info ############################################################################################################
 # !!! Between the keys and values ​​no tabs, please use spaces !!!
 # !!! Please use first unused id for new protocols !!!
-# ID´s are currently unused: 118 - 
+# ID´s are currently unused: 124 - 
 # ID´s need to be revised (preamble u): 5|19|21|22|23|25|28|31|36|40|52|59|63
 ###########################################################################################################################################
 # Please provide at least three messages for each new MU/MC/MS/MN protocol and a URL of issue in GitHub or discussion in FHEM Forum
@@ -86,7 +85,7 @@ package lib::SD_ProtocolData;
   use strict;
   use warnings;
 
-  our $VERSION = '1.46';
+  our $VERSION = '1.49';
 
   our %protocols = (
     "0" =>  ## various weather sensors (500 | 9100)
@@ -573,7 +572,6 @@ package lib::SD_ProtocolData;
         format           => 'twostate',
         preamble         => 'P13#',
         clientmodule     => 'FLAMINGO',
-        #      => '',
         length_min       => '24',
         length_max       => '24',
       },
@@ -723,9 +721,14 @@ package lib::SD_ProtocolData;
               # RCnoName20_17E9 off    MS;P1=-754;P2=213;P4=681;P5=-283;P6=-7869;D=2621212145214545454545452145212145212121212145214521212121452121;CP=2;SP=6;R=69;O;m2;
               # RCnoName20_17E9 plus   MS;P1=-744;P2=221;P3=679;P4=-278;P5=-7860;D=2521212134213434343434342134212134212121213421212134343434212121;CP=2;SP=5;R=66;O;m2;
               # RCnoName20_17E9 minus  MS;P0=233;P1=-7903;P3=-278;P5=-738;P6=679;D=0105050563056363636363630563050563050505050505630563050505630505;CP=0;SP=1;R=71;O;m1;
+              ## Remote control DC-1961-TG with 12 buttons for ceiling fan with lighting
+              # https://forum.fhem.de/index.php/topic,53282.msg1240911.html#msg1240911 @ Skusi  2022-10-23
+              # DC_1961_TG_1846 light_on_off   MS;P1=291;P2=-753;P3=762;P4=-249;P5=-8312;D=151212123434121212123412121234341234123412341212121234341212341234;CP=1;SP=5;R=224;O;m2;
+              # DC_1961_TG_1846 fan_off        MS;P1=-760;P2=747;P3=-282;P4=253;P5=-8335;D=454141412323414141412341414123234123412341412323234123232323412323;CP=4;SP=5;R=27;O;m2;
+              # DC_1961_TG_1846 fan_direction  MS;P0=-8384;P1=255;P2=-766;P3=754;P4=-263;D=101212123434121212123412121234341234123412341212341234341212341212;CP=1;SP=0;R=27;O;m2;
       {
         name            => 'RCnoName20',
-        comment         => 'Remote control with 4 buttons for diesel heating',
+        comment         => 'Remote control with 4, 10 or 12 buttons',
         id              => '20',
         knownFreqs      => '433.92',
         one             => [3,-1],  # 720,-240
@@ -738,6 +741,27 @@ package lib::SD_ProtocolData;
         modulematch     => '^P20#.{8}',
         length_min      => '31',
         length_max      => '32',
+      },
+    "20.1" => ## Remote control with 10 buttons for fan (messages mostly recognized as MS, sometimes MU)
+              # https://forum.fhem.de/index.php/topic,53282.msg1233431.html#msg1233431 @ steffen83 2022-09-01
+              # RCnoName20_10_3E00 light_on   MU;P0=-8774;P1=282;P2=-775;P3=815;P4=-253;P5=-32001;D=10121234343434341212121212121212121212123434343412121234343412343415;CP=1;
+              # RCnoName20_10_3E00 light_off  MU;P0=-238;P1=831;P3=300;P4=-762;P5=-363;P6=192;P7=-8668;D=01010101010343434343434343434343434103415156464156464641564646734341010101010343434343434343434343434103410103434103434341034343734341010101010343434343434343434343434103410103434103434341034343734341010101010343434343434343434343434103410103434103434341;CP=3;O;
+              # RCnoName20_10_3E00 fan_stop   MU;P0=184;P1=-380;P2=128;P3=-9090;P4=-768;P5=828;P6=-238;P7=298;D=45656565656747474747474747474747474567474560404515124040451040374745656565656747474747474747474747474567474567474565674747456747374745656565656747474747474747474747474567474567474565674747456747374745656565656747474747474747474747474567474567474565674747;CP=7;O;
+      {
+        name         => 'RCnoName20',
+        comment         => 'Remote control with 4, 10 or 12 buttons',
+        id           => '20.1',
+        knownFreqs   => '433.92',
+        one          => [3,-1],  # 720,-240
+        zero         => [1,-3],  # 240,-720
+        start        => [1,-33], # 240,-7920
+        clockabs     => 240,
+        format       => 'twostate',
+        preamble     => 'P20#',
+        clientmodule => 'SD_UT',
+        modulematch  => '^P20#.{8}',
+        length_min   => '31',
+        length_max   => '32',
       },
     "21"  =>  ## Einhell Garagentor
               # https://forum.fhem.de/index.php?topic=42373.0 @Ellert | user have no RAWMSG
@@ -2912,12 +2936,12 @@ package lib::SD_ProtocolData;
         name            => 'Bresser 5in1',
         comment         => 'BRESSER 5-in-1 weather center, rain gauge, Fody E42, Fody E43',
         id              => '108',
-        knownFreqs      => '868.35',
+        knownFreqs      => '868.300',
         datarate        => '8.232',
         sync            => '2DD4',
         modulation      => '2-FSK',
         rfmode          => 'Bresser_5in1',
-        register        => ['0001','022E','0346','042D','05D4','061A','07C0','0800','0D21','0E65','0FE8','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
+        register        => ['0001','022E','0346','042D','05D4','061A','07C0','0800','0D21','0E65','0F6A','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
         preamble        => 'W108#',
         clientmodule    => 'SD_WS',
         length_min      => '52',
@@ -3072,12 +3096,12 @@ package lib::SD_ProtocolData;
         name            => 'Bresser 6in1',
         comment         => 'BRESSER 6-in-1 weather center',
         id              => '115',
-        knownFreqs      => '868.35',
+        knownFreqs      => '868.300',
         datarate        => '8.232',
         sync            => '2DD4',
         modulation      => '2-FSK',
         rfmode          => 'Bresser_6in1',
-        register        => ['0001','022E','0344','042D','05D4','0612','07C0','0800','0D21','0E65','0FE8','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
+        register        => ['0001','022E','0344','042D','05D4','0612','07C0','0800','0D21','0E65','0F6A','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
         preamble        => 'W115#',
         clientmodule    => 'SD_WS',
         length_min      => '36',
@@ -3128,12 +3152,12 @@ package lib::SD_ProtocolData;
         name            => 'Bresser 7in1',
         comment         => 'BRESSER 7-in-1 weather center',
         id              => '117',
-        knownFreqs      => '868.35',
+        knownFreqs      => '868.300',
         datarate        => '8.232',
         sync            => '2DD4',
         modulation      => '2-FSK',
         rfmode          => 'Bresser_7in1',
-        register        => ['0001','022E','0345','042D','05D4','0616','07C0','0800','0D21','0E65','0FE8','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
+        register        => ['0001','022E','0345','042D','05D4','0616','07C0','0800','0D21','0E65','0F6A','1088','114C','1202','1322','14F8','1551','1916','1B43','1C68'],
         preamble        => 'W117#',
         clientmodule    => 'SD_WS',
         length_min      => '44',
@@ -3192,6 +3216,27 @@ package lib::SD_ProtocolData;
         length_max      => '52',
         method          => \&lib::SD_Protocols::mcBit2Funkbus,
       },
+    "120" =>  ## Weather station TFA 35.1077.54.S2 with 30.3151 (T/H-transmitter), 30.3152 (rain gauge), 30.3153 (anemometer)
+              # https://forum.fhem.de/index.php/topic,119335.msg1221926.html#msg1221926 2022-05-17 @ Ronny2510
+              # SD_WS_120 T: 19.1 H: 84 W: 0.7 R: 473.1  MU;P0=-6544;P1=486;P2=-987;P3=1451;D=01212121212121232123212321232121232323232321232321232321212121232123212321232323232323232321232323232323212323232323232321212323232123212323212121232123212123;CP=1;R=51;
+              # SD_WS_120 T: 18.7 H: 60 W: 2.0 R: 491.1  MU;P0=-4848;P1=984;P2=-981;P3=1452;P4=-17544;P5=480;P6=-31000;P7=320;D=01234525252525252523252325232523252523232323232523232523232523252523232525252523232323232323252523232323232523232323232323232525232325252323252325252323232523232565272525252525232523252325232525232323232325232325232325232525232325252525232323232323232525;CP=5;R=51;O;
+              # SD_WS_120 T: 22   H: 43 W: 0.3 R: 530.4  MU;P0=-15856;P1=480;P2=-981;P3=1460;D=01212121212121232123212321232121232323232321232321212321212323232321232123212123232323232323212323232323232123232323232321212321212123212323232321212121232121;CP=1;R=47; 
+      {
+        name            => 'TFA 35.1077.54.S2',
+        comment         => 'Weatherstation with sensors 30.3151, 30.3152, 30.3153',
+        id              => '120',
+        knownFreqs      => '868.35',
+        one             => [1,-2], #  480,-960
+        zero            => [3,-2], # 1440,-960
+        clockabs        => 480,
+        reconstructBit  => '1',
+        format          => 'twostate',
+        preamble        => 'W120#',
+        clientmodule    => 'SD_WS',
+        modulematch     => '^W120#',
+        length_min      => '78',
+        length_max      => '80',
+      },
     "121" => ## Remote control Busch-Transcontrol HF - Handsender 6861
              # 1 OFF   MU;P0=28479;P1=-692;P2=260;P3=574;P4=-371;D=0121212121212134343434213434342121213434343434342;CP=2;R=41;
              # 1 ON    MU;P0=4372;P1=-689;P2=254;P3=575;P4=-368;D=0121213434212134343434213434342121213434343434342;CP=2;R=59;
@@ -3213,7 +3258,45 @@ package lib::SD_ProtocolData;
         length_min      => '23',
         length_max      => '24',
       },
-
+    "122" =>  ## TM40, Wireless Grill-, Meat-, Roasting-Thermometer with 4 Temperature Sensors
+              # https://forum.fhem.de/index.php?topic=127938.msg1224516#msg1224516 2022-06-09 @ Prof. Dr. Peter Henning
+              # SD_WS_122_T  T: 36 T2: 32 T3: 31 T4: 31  MU;P0=3412;P1=-1029;P2=1043;P3=4706;P4=-2986;P5=549;P6=-1510;P7=-562;D=01212121212121213456575756575756575756565757575656575757575757575657575656575656575757575757575756575756565756565757575757575757565756575757575757575757575757575657565657565757575757575757575757575757575757575756575656565757575621212121212121213456575756;CP=5;R=2;O;
+              # SD_WS_122_T  T: 83 T2: 22 T3: 22 T4: 22  MU;P0=11276;P1=-1039;P2=1034;P3=4704;P4=-2990;P5=543;P6=-1537;P7=-559;D=01212121212121213456575756575756575756565757575656575757575757575756565756565657575757575757575757565657565656575757575757575757575656575656565757575757575757565657575656565656575757575757575757575757575757575756565756565656575621212121212121213456575756;CP=5;R=12;O;
+      {
+        name            => 'TM40',
+        comment         => 'Roasting Thermometer with 4 Temperature Sensors',
+        id              => '122',
+        knownFreqs      => '433.92',
+        one             => [1,-3],           # 520,-1560
+        zero            => [1,-1],           # 520,-520
+        start           => [2,-1,2,-1,9,-6], # 1040,-520,1040,-520,4680,-3120
+        clockabs        => 520,
+        format          => 'twostate',
+        preamble        => 'W122#',
+        clientmodule    => 'SD_WS',
+        modulematch     => '^W122#',
+        length_min      => '104',
+        length_max      => '108',
+      },
+    "123" =>  ## Inkbird IBS-P01R Pool Thermometer, Inkbird ITH-20R (not tested)
+              # https://forum.fhem.de/index.php/topic,128945.0.html 2022-08-28 @ xeenon
+              # SD_WS_123_T_0655  T: 25           MN;D=D3910F800301005A0655FA001405140535F6;R=10;
+              # SD_WS_123_T_7E43  T: 25.4 H: 60   MN;D=D3910F00010301207E43FE0014055802772A;R=232;
+      {
+        name            => 'IBS-P01R',
+        comment         => 'Inkbird IBS-P01R pool phermometer, ITH-20R',
+        id              => '123',
+        knownFreqs      => '433.92',
+        datarate        => '10.000',
+        sync            => '2DD4',
+        modulation      => '2-FSK',
+        regexMatch      => qr/^D391/,
+        preamble        => 'W123#',
+        register        => ['0001','022E','0344','042D','05D4','0612','07C0','0800','0D10','0EB0','0F71','10C8','1193','1202','1322','14F8','1534','1916','1B43','1C48'],
+        rfmode          => 'Inkbird_IBS-P01R',
+        clientmodule    => 'SD_WS',
+        length_min      => '36',
+      },
     ########################################################################
     #### ###  register informations from other hardware protocols  #### ####
 
