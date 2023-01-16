@@ -1,5 +1,5 @@
 ##############################################
-# $Id: 14_SD_AS.pm 350 2020-10-01 20:16:11Z elektron-bbs $
+# $Id: 14_SD_AS.pm 350 2023-01-09 19:54:08Z sidey79 $
 # The file is part of the SIGNALduino project
 # see http://www.fhemwiki.de/wiki/SIGNALduino
 # and was created to provide support for self build sensors.
@@ -14,10 +14,11 @@ package main;
 use strict;
 use warnings;
 use POSIX;
+use FHEM::Meta;
 
 #####################################
 sub
-SD_AS_Initialize($)
+SD_AS_Initialize
 {
   my ($hash) = @_;
 
@@ -45,9 +46,9 @@ SD_AS_Initialize($)
   # ..31 
 
   $hash->{Match}     = "^P2#[A-Fa-f0-9]{7,8}";
-  $hash->{DefFn}     = "SD_AS_Define";
-  $hash->{UndefFn}   = "SD_AS_Undef";
-  $hash->{ParseFn}   = "SD_AS_Parse";
+  $hash->{DefFn}     = \&SD_AS_Define;
+  $hash->{UndefFn}   = \&SD_AS_Undef;
+  $hash->{ParseFn}   = \&SD_AS_Parse;
   $hash->{AttrList}  = "do_not_notify:0,1 showtime:0,1 ignore:0,1 ".$readingFnAttributes;
   $hash->{AutoCreate}=
         { 
@@ -58,11 +59,13 @@ SD_AS_Initialize($)
           "ArduinoSensor_voltage.*" => { ATTR => "event-min-interval:.*:300 event-on-change-reading:.*", FILTER => "%NAME", autocreateThreshold => "3:600"},
           "ArduinoSensor_raw.*" => { ATTR => "event-min-interval:.*:300 event-on-change-reading:.*", FILTER => "%NAME", autocreateThreshold => "3:600"},
         };
+
+	return FHEM::Meta::InitMod( __FILE__, $hash );
 }
 
 #####################################
 sub
-SD_AS_Define($$)
+SD_AS_Define
 {
   my ($hash, $def) = @_;
   my @a = split("[ \t][ \t]*", $def);
@@ -82,7 +85,7 @@ SD_AS_Define($$)
 
 #####################################
 sub
-SD_AS_Undef($$)
+SD_AS_Undef
 {
   my ($hash, $name) = @_;
   delete($modules{AS}{defptr}{$hash->{CODE}}) if($hash && $hash->{CODE});
@@ -91,7 +94,7 @@ SD_AS_Undef($$)
 
 #####################################
 sub
-SD_AS_Parse($$)
+SD_AS_Parse
 {
 	my ($iohash,$msg) = @_;
 	my (undef ,$rawData) = split("#",$msg);
@@ -272,7 +275,7 @@ SD_AS_Parse($$)
 #Initial value: 0x0
 #See http://www.maxim-ic.com/appnotes.cfm/appnote_number/27
 
-sub SD_AS_crc($$)
+sub SD_AS_crc
 {
   my ($lcrc,$ldata) = @_;
   my $i;
@@ -371,4 +374,82 @@ sub SD_AS_crc($$)
 </ul>
 
 =end html_DE
+=for :application/json;q=META.json 14_SD_AS.pm
+{
+  "abstract": "Logical Module for arduino sensors with AS Protocol",
+  "author": [
+    "Sidey <>",
+    "elektron-bbs <>"
+  ],
+  "x_fhem_maintainer": [
+    "Sidey"
+  ],
+  "x_fhem_maintainer_github": [
+    "Sidey79",
+    "elektron-bbs",
+	  "HomeAutoUser"
+  ],
+  "description": "This module interprets digitals signals send from an Arduinosensordevice provided from the signalduino hardware",
+  "dynamic_config": 1,
+  "keywords": [
+    "fhem-sonstige-systeme",
+    "fhem-hausautomations-systeme",
+    "fhem-mod",
+    "signalduino",
+    "Arduino Sensor"
+  ],
+  "license": [
+    "GPL_2"
+  ],
+  "meta-spec": {
+    "url": "https://metacpan.org/pod/CPAN::Meta::Spec",
+    "version": 2
+  },
+  "name": "FHEM::SD_AS",
+  "prereqs": {
+    "runtime": {
+      "requires": {
+        "Digest::CRC;": "0"
+      }
+    },
+    "develop": {
+      "requires": {
+        "Digest::CRC;": "0"
+      }
+    }
+  },
+  "release_status": "stable",
+  "resources": {
+    "bugtracker": {
+      "web": "https://github.com/RFD-FHEM/RFFHEM/issues/"
+    },
+    "x_testData": [
+      {
+        "url": "https://raw.githubusercontent.com/RFD-FHEM/RFFHEM/master/t/FHEM/14_SD_AS/testData.json",
+        "testname": "Testdata with SD_AS sensors"
+      }
+    ],
+    "repository": {
+      "x_master": {
+        "type": "git",
+        "url": "https://github.com/RFD-FHEM/RFFHEM.git",
+        "web": "https://github.com/RFD-FHEM/RFFHEM/tree/master"
+      }
+    },
+    "x_support_community": {
+      "board": "Sonstige Systeme",
+      "boardId": "29",
+      "cat": "FHEM - Hausautomations-Systeme",
+      "description": "Sonstige Hausautomations-Systeme",
+      "forum": "FHEM Forum",
+      "rss": "https://forum.fhem.de/index.php?action=.xml;type=rss;board=29",
+      "title": "FHEM Forum: Sonstige Systeme",
+      "web": "https://forum.fhem.de/index.php/board,29.0.html"
+    },
+    "x_wiki": {
+      "web": "https://wiki.fhem.de/wiki/SIGNALduino"
+    }
+  }
+}
+=end :application/json;q=META.json
 =cut
