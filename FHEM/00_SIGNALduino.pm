@@ -1,4 +1,4 @@
-# $Id: 00_SIGNALduino.pm 3.5.5 2023-01-28 15:26:11Z elektron-bbs $
+# $Id: 00_SIGNALduino.pm 3.5.6 2023-08-27 19:36:33Z elektron-bbs $
 # v3.5.5 - https://github.com/RFD-FHEM/RFFHEM/tree/master
 # The module is inspired by the FHEMduino project and modified in serval ways for processing the incoming messages
 # see http://www.fhemwiki.de/wiki/SIGNALDuino
@@ -42,7 +42,7 @@ use List::Util qw(first);
 
 
 use constant {
-  SDUINO_VERSION                  => '3.5.5+20230128',  # Datum wird automatisch bei jedem pull request aktualisiert
+  SDUINO_VERSION                  => '3.5.5+20230827',  # Datum wird automatisch bei jedem pull request aktualisiert
   SDUINO_INIT_WAIT_XQ             => 1.5,     # wait disable device
   SDUINO_INIT_WAIT                => 2,
   SDUINO_INIT_MAXRETRY            => 3,
@@ -254,7 +254,7 @@ my %matchListSIGNALduino = (
       '14:Dooya'            => '^P16#[A-Fa-f0-9]+',
       '15:SOMFY'            => '^Ys[0-9A-F]+',
       '16:SD_WS_Maverick'   => '^P47#[A-Fa-f0-9]+',
-      '17:SD_UT'            => '^P(?:14|20|24|26|29|30|34|46|56|68|69|76|78|81|83|86|90|91|91.1|92|93|95|97|99|104|105|114|118|121)#.*', # universal - more devices with different protocols
+      '17:SD_UT'            => '^P(?:14|20|24|26|29|30|34|46|56|68|69|76|78|81|83|86|90|91|91.1|92|93|95|97|99|104|105|114|118|121|127|128)#.*', # universal - more devices with different protocols
       '18:FLAMINGO'         => '^P13\.?1?#[A-Fa-f0-9]+',              # Flamingo Smoke
       '19:CUL_WS'           => '^K[A-Fa-f0-9]{5,}',
       '20:Revolt'           => '^r[A-Fa-f0-9]{22}',
@@ -324,7 +324,7 @@ sub SIGNALduino_Initialize {
             .' doubleMsgCheck_IDs'
             .' eventlogging:0,1'
             .' flashCommand'
-            .' hardware:ESP32,ESP32cc1101,ESP8266,ESP8266cc1101,MAPLEMINI_F103CB,MAPLEMINI_F103CBcc1101,nano328,nanoCC1101,miniculCC1101,promini,radinoCC1101'
+            .' hardware:esp32s,esp32cc1101,esp8266s,esp8266cc1101,MAPLEMINI_F103CBs,MAPLEMINI_F103CBcc1101,nano328,nanoCC1101,miniculCC1101,promini8cc1101,promini16cc1101,promini8s,promini16s,radinoCC1101'
             .' hexFile'
             .' initCommands'
             .' longids'
@@ -2144,7 +2144,7 @@ sub SIGNALduino_Split_Message {
   my $clockabs;
   my $mcbitnum;
   my $rssi;
-
+  my $freqafc; ## for AFC cc1101 0x32 (0xF2): FREQEST – Frequency Offset Estimate from Demodulator
   my @msg_parts = SIGNALduino_splitMsg($rmsg,';');      ## Split message parts by ';'
   my %ret;
   my $debug = AttrVal($name,'debug',0);
@@ -2204,6 +2204,10 @@ sub SIGNALduino_Split_Message {
       $rssi = $_ ;
       Debug "$name: extracted RSSI $rssi \n" if ($debug);
       $ret{rssi} = $rssi;
+    } elsif ($_ =~ m/A=(-?[0-9]{0,3})/ ){
+      # uncoverable branch true
+      Debug qq[$name: extracted FREQEST $1 \n] if ($debug);
+      $ret{freqest} =  $1;
     }  else {
       Debug "$name: unknown Message part $_" if ($debug);;
     }
@@ -2216,7 +2220,7 @@ sub SIGNALduino_Split_Message {
 ############################# package main, test exists
 # Function which dispatches a message if needed.
 sub SIGNALduno_Dispatch {
-  my ($hash, $rmsg, $dmsg, $rssi, $id) = @_;
+  my ($hash, $rmsg, $dmsg, $rssi, $id, $freqafc) = @_;
   my $name = $hash->{NAME};
 
   if (!defined($dmsg))
@@ -2274,6 +2278,10 @@ sub SIGNALduno_Dispatch {
       else {
         $rssi = '';
       }
+      if(defined($freqafc)) { # AFC cc1101 0x32 (0xF2): FREQEST – Frequency Offset Estimate from Demodulator
+        $addvals{FREQAFC} = $freqafc;
+      }
+
       $dmsg = lc($dmsg) if ($id eq '74' or $id eq '74.1');    # 10_FS20.pm accepted only lower case hex
       $hash->{logMethod}->($name, SDUINO_DISPATCH_VERBOSE, "$name: Dispatch, $dmsg, $rssi dispatch");
       Dispatch($hash, $dmsg, \%addvals);  ## Dispatch to other Modules
@@ -2894,7 +2902,7 @@ sub SIGNALduino_Parse_MN {
   my $hash = shift // return;   #return if no hash  is provided
   my $rmsg = shift // return;   #return if no rmsg is provided
  
-  if ($rmsg !~ /^MN;D=[0-9A-F]+;(?:R=[0-9]+;)?$/){
+  if ($rmsg !~ /^MN;D=[0-9A-F]+;(?:R=[0-9]+;)?(?:A=-?[0-9]{1,3};)?$/) { # AFC cc1101 0x32 (0xF2): FREQEST – Frequency Offset Estimate from Demodulator
     $hash->{logMethod}->($hash->{NAME}, 3, qq[$hash->{NAME}: Parse_MN, faulty msg: $rmsg]);
     return ; # Abort here if not successfull
   }
@@ -2906,10 +2914,15 @@ sub SIGNALduino_Parse_MN {
   my $rawData  = _limit_to_hex($msg_parts{rawData})     // $hash->{logMethod}->($hash->{NAME}, 3, qq[$hash->{NAME}: Parse_MN, faulty rawData D=: $msg_parts{rawData}]) //  return ;
   my $rssi;
   my $rssiStr= '';
-  if ( defined $msg_parts{rssi} ){
+  my $freqafc;
+  if ( exists $msg_parts{rssi} ){
      $rssi = _limit_to_number($msg_parts{rssi}) // $hash->{logMethod}->($hash->{NAME}, 3, qq[$hash->{NAME}: Parse_MN, faulty rssi R=: $msg_parts{rssi}]) //  return ;
     ($rssi,$rssiStr) = SIGNALduino_calcRSSI($rssi);
   };
+  if ( exists $msg_parts{freqest} ){ #AFC cc1101 0x32 (0xF2): FREQEST – Frequency Offset Estimate from Demodulator
+    $freqafc = $msg_parts{freqest};
+    $freqafc = FHEM::Core::Utils::Math::round((26000000 / 16384 * $freqafc / 1000),0);
+  }
   my $messagetype=$msg_parts{messagetype};
   my $name = $hash->{NAME};
 
@@ -2953,7 +2966,7 @@ sub SIGNALduino_Parse_MN {
     }
     $dmsg = sprintf('%s%s',$hash->{protocolObject}->checkProperty($id,'preamble',''),$methodReturn[0]);
     $hash->{logMethod}->($name, 5, qq[$name: Parse_MN, Decoded matched MN Protocol id $id dmsg=$dmsg $rssiStr]);
-    SIGNALduno_Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
+    SIGNALduno_Dispatch($hash,$rmsg,$dmsg,$rssi,$id,$freqafc);
     $message_dispatched++;
     
   }
@@ -4526,6 +4539,8 @@ USB-connected devices (SIGNALduino):<br>
     <br>Example 4: <code>set sduino raw SN;R=3;D=9A46036AC8D3923EAEB470AB;</code>  sends a xFSK message of raw and repeated 3 times
     <ul><br>
       <b>note: The wrong use of the upcoming options can lead to malfunctions of the SIGNALduino!</b><br><br>
+      <li>CEA -> Switching on the automatic frequency control for FSK modulation and firmware version >= V 4.0.0 (config: AFC=1)</li>
+      <li>CDA -> Switching off the automatic frequency control for FSK modulation and firmware version >= V 4.0.0 (config: AFC=0)</li>
       <li>CER -> turn on data compression (config: Mred=1)</li>
       <li>CDR -> disable data compression (config: Mred=0)</li><br>
 
@@ -4729,20 +4744,24 @@ USB-connected devices (SIGNALduino):<br>
   <a name="SIGNALDuino_hardware"></a>
   <li>hardware<br>
     Currently, there are serval hardware options with different receiver options available.
-    The simple single wire option,  consists of a single wire connected receiver and a single wire connected transmitter which are connected over a single digital port with the microcontroller. The receiver only sends data and the transmitter receives only from the microcontroller.
+    The simple single wire option,  consists of a single wire connected receiver and a single wire connected transmitter which are connected over a single digital port with the microcontroller.
+    The receiver only sends data and the transmitter receives only from the microcontroller.
     The other option consists of the cc1101 (sub 1 GHZ) chip, which can transmit and receiver. It's a transceiver which is connected via spi.
-    ESP8266 hardware type, currently doesn't support flashing out of the modu and needs at leat 1 MB of flash.
+    ESP8266 hardware type, currently doesn't support flashing out of the module and needs at leat 1 MB of flash.
     <ul>
-      <li>ESP32: ESP32 with simple single wire receiver</li>
-      <li>ESP32cc1101: ESP32 with CC1101 (spi connected) receiver</li>
-      <li>ESP8266: ESP8266 with simple single wire receiver</li>
-      <li>ESP8266cc1101: ESP8266 with CC1101 (spi connected) receiver</li>
-      <li>MAPLEMINI_F103CB: MapleMini F103CB (STM32 family) with simple single wire receiver</li>
+      <li>esp32s: ESP32 with simple single wire receiver</li>
+      <li>esp32cc1101: ESP32 with CC1101 (spi connected) receiver</li>
+      <li>esp8266s: ESP8266 with simple single wire receiver</li>
+      <li>esp8266cc1101: ESP8266 with CC1101 (spi connected) receiver</li>
+      <li>MAPLEMINI_F103CBs: MapleMini F103CB (STM32 family) with simple single wire receiver</li>
       <li>MAPLEMINI_F103CBcc1101: MapleMini F103CB (STM32 family) with CC1101 (spi connected) receiver</li>
       <li>miniculCC1101: Arduino pro Mini with CC110x (spi connected) receiver and cables as a minicul</li>
-      <li>nano: Arduino Nano 328 with simple single wired receiver</li>
+      <li>nano328: Arduino Nano 328 with simple single wired receiver</li>
       <li>nanoCC1101: Arduino Nano 328 with CC110x (spi connected) receiver</li>
-      <li>promini: Arduino Pro Mini 328 with simple single receiver </li>
+      <li>promini8s: Arduino Pro Mini 328 8Mhz with simple single wired receiver</li>
+      <li>promini8cc1101: Arduino Pro Mini 328 8Mhz with CC110x (spi connected) receiver</li>
+      <li>promini16s: Arduino Pro Mini 328 16Mhz with simple single wired receiver</li>
+      <li>promini16cc1101: Arduino Pro Mini 328 16Mhz with CC110x (spi connected) receiver</li>
       <li>radinoCC1101: Arduino compatible radino with cc1101 (spi connected) receiver</li>
     </ul>
   </li><br>
@@ -5118,6 +5137,8 @@ USB-connected devices (SIGNALduino):<br>
 
     <ul>
       <b>Hinweis: Die falsche Benutzung der kommenden Optionen kann zu Fehlfunktionen des SIGNALduinos f&uuml;hren!</b><br><br>
+      <li>CEA -> Einschalten der automatischen Frequenzkontrolle bei FSK-Modulation und Firmwareversion >= V 4.0.0 (config: AFC=1)</li>
+      <li>CDA -> Abschalten der automatischen Frequenzkontrolle bei FSK-Modulation und Firmwareversion >= V 4.0.0 (config: AFC=0)</li>
       <li>CER -> Einschalten der Datenkomprimierung (config: Mred=1)</li>
       <li>CDR -> Abschalten der Datenkomprimierung (config: Mred=0)</li><br>
       <u>Register Befehle bei einem CC1101</u>
@@ -5318,20 +5339,24 @@ USB-connected devices (SIGNALduino):<br>
   <a name="SIGNALDuino_hardware"></a>
   <li>hardware<br>
     Derzeit m&ouml;gliche Hardware Varianten mit verschiedenen Empfänger Optionen.
-    Die einfache Variante besteht aus einem Empf&auml;nger und einen Sender, die über je eine einzige digitale Signalleitung Datem mit dem Microcontroller austauschen. Der Empf&auml;nger sendet dabei und der Sender empf&auml;ngt dabei ausschließlich.
+    Die einfache Variante besteht aus einem Empf&auml;nger und einen Sender, die über je eine einzige digitale Signalleitung Datem mit dem Microcontroller austauschen.
+    Der Empf&auml;nger sendet dabei und der Sender empf&auml;ngt dabei ausschließlich.
     Weiterhin existiert der den sogenannten cc1101 (sub 1 GHZ) Chip, welche empfangen und senden kann. Dieser wird über die SPI Verbindung angebunden.
     ESP8266 Hardware Typen, unterstützen derzeit kein flashen aus dem Modul und ben&ouml;tigen mindestens 1 MB Flash Speicher.
     <ul>
-      <li>ESP32: ESP32 f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>ESP32s: ESP32 f&uuml;r einfachen eindraht Empf&auml;nger</li>
       <li>ESP32cc1101: ESP32 mit einem CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>ESP8266: ESP8266 f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>ESP8266s: ESP8266 f&uuml;r einfachen eindraht Empf&auml;nger</li>
       <li>ESP8266cc1101: ESP8266 mit einem CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>MAPLEMINI_F103CB: MapleMini F103CB (STM32) f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>MAPLEMINI_F103CBs: MapleMini F103CB (STM32) f&uuml;r einfachen eindraht Empf&auml;nger</li>
       <li>MAPLEMINI_F103CBcc1101: MapleMini F103CB (STM32) mit einem CC110x-Empf&auml;nger (SPI Verbindung)</li>
       <li>miniculCC1101: Arduino pro Mini mit einem CC110x-Empf&auml;nger (SPI Verbindung) entsprechend dem minicul verkabelt</li>
-      <li>nano: Arduino Nano 328 f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>nano328: Arduino Nano 328 f&uuml;r einfachen eindraht Empf&auml;nger</li>
       <li>nanoCC1101: Arduino Nano f&uuml;r einen CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>promini: Arduino Pro Mini 328 f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>promini8s: Arduino Pro Mini 328 8Mhz f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>promini8cc1101: Arduino Pro Mini 328 8Mhz f&uuml;r einen CC110x-Empf&auml;nger (SPI Verbindung)</li>
+      <li>promini16s: Arduino Pro Mini 328 16Mhz f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>promini16cc1101: Arduino Pro Mini 328 16Mhz f&uuml;r einen CC110x-Empf&auml;nger (SPI Verbindung)</li>
       <li>radinoCC1101: Ein Arduino kompatibler Radino mit CC110x-Empfänger (SPI Verbindung)</li>
     </ul><br>
     Notwendig f&uuml;r den Befehl <code>flash</code>. Hier sollten Sie angeben, welche Hardware Sie mit dem usbport verbunden haben. Andernfalls kann es zu Fehlfunktionen des Ger&auml;ts kommen. Wichtig ist auch das Attribut <code>updateChannelFW</code><br>
@@ -5401,6 +5426,14 @@ USB-connected devices (SIGNALduino):<br>
       <li>Fine_Offset_WH57_868<br>
         Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=9 Byte, Frequenz 868.35 MHz
         <ul><small>Beispiel: Gewittersensor Fine Offset WH57, Froggit DP60, Ambient Weather WH31L</small></ul>
+      </li>
+      <li>Fine_Offset_WH31_868<br>
+        Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=11 Byte, Frequenz 868.35 MHz
+        <ul><small>Beispiel: Temperatur-/Feuchtesensor Fine Offset WH31, Froggit DP50, Ambient Weather WH31e/b, Ecowitt wh31</small></ul>
+      </li>
+      <li>Fine_Offset_WH40_868<br>
+        Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequenz 868.35 MHz
+        <ul><small>Beispiel: Regensensor Fine Offset WH40, Ambient Weather WH40, Ecowitt WH40</small></ul>
       </li>
       <li>Inkbird_IBS-P01R<br>
         Modulation 2-FSK, Datenrate=10.00 kbps, Sync Word=2DD4, Packet Length=18 Byte, Frequenz 433.92 MHz
