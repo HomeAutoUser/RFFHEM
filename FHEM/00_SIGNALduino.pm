@@ -1,4 +1,4 @@
-# $Id: 00_SIGNALduino.pm 3.5.6 2024-01-02 22:22:14Z sidey79 $
+# $Id: 00_SIGNALduino.pm 3.5.6 2024-03-09 15:50:25Z sidey79 $
 # v3.5.6 - https://github.com/RFD-FHEM/RFFHEM/tree/master
 # The module is inspired by the FHEMduino project and modified in serval ways for processing the incoming messages
 # see http://www.fhemwiki.de/wiki/SIGNALDuino
@@ -4807,7 +4807,7 @@ USB-connected devices (SIGNALduino):<br>
   <a name="noMsgVerbose"></a>
   <li>noMsgVerbose<br>
     With this attribute you can control the logging of debug messages from the io device.
-    If set to 3, this messages are logged if global verbose is set to 3 or higher.
+    If set to 3, this messages are logged if device attr verbose is set to 3 or higher.
   </li><br>
   <a name="rawmsgEvent"></a>
   <li>rawmsgEvent<br>
@@ -4832,6 +4832,9 @@ USB-connected devices (SIGNALduino):<br>
         Modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, Packet Length=23 Byte, frequency 868.3 MHz
         <ul><small>Example: BRESSER 7-in-1 outdoor sensor, BRESSER PM2.5/10 air quality meter</small></ul>
       </li>
+      <li>Bresser_lightning<br>
+        Modulation 2-FSK, Datarate=8.23 kbps, Sync Word=2DD4, Packet Length=10 Byte, frequency 868.3 MHz
+        <ul><small>Beispiel: BRESSER lightning sensor</small></ul>
       </li>
       <li>Fine_Offset_WH51_434<br>
         Modulation 2-FSK, Datarate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequency 433.92 MHz
@@ -5403,7 +5406,7 @@ USB-connected devices (SIGNALduino):<br>
   </li><br>
   <a name="noMsgVerbose"></a>
   <li>noMsgVerbose<br>
-    Mit diesem Attribut k&ouml;nnen Sie die Protokollierung von Debug-Nachrichten vom io-Ger&auml;t steuern. Wenn dieser Wert auf 3 festgelegt ist, werden diese Nachrichten protokolliert, wenn der globale Verbose auf 3 oder h&ouml;her eingestellt ist.
+    Mit diesem Attribut k&ouml;nnen Sie die Protokollierung von Debug-Nachrichten vom io-Ger&auml;t steuern. Wenn dieser Wert auf 3 festgelegt ist, werden diese Nachrichten protokolliert, wenn das geräte attr Verbose auf 3 oder h&ouml;her eingestellt ist.
   </li><br>
   <a name="rawmsgEvent"></a>
   <li>rawmsgEvent<br>
@@ -5427,6 +5430,10 @@ USB-connected devices (SIGNALduino):<br>
       <li>Bresser_7in1<br>
         Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, Packet Length=23 Byte, Frequenz 868.3 MHz
         <ul><small>Beispiel: BRESSER 7-in-1 Außensensor, BRESSER PM2.5/10 Luftqualitätssensor</small></ul>
+      </li>
+      <li>Bresser_lightning<br>
+        Modulation 2-FSK, Datenrate=8.23 kbps, Sync Word=2DD4, Packet Length=10 Byte, Frequenz 868.3 MHz
+        <ul><small>Beispiel: BRESSER Blitzsensor</small></ul>
       </li>
       <li>Fine_Offset_WH51_434<br>
         Modulation 2-FSK, Datenrate=17.26 kbps, Sync Word=2DD4, Packet Length=14 Byte, Frequenz 433.92 MHz
