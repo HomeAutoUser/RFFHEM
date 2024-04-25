@@ -64,14 +64,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: file_changes
-        uses: tj-actions/changed-files@v39
+        uses: tj-actions/changed-files@v42
         with:
           json: true
           quotepath: false
           files: |
-              FHEM/*.pm
-              FHEM/lib/*.pm
-              lib/FHEM/*.pm
+              FHEM/**.pm
+              FHEM/lib/**.pm
+              lib/FHEM/**.pm
 
       - name: Get current date
         id: date
@@ -159,11 +159,11 @@ jobs:
               find ./FHEM -name "$FILE" -exec cp $FPATH "{}" \;
           done
       - name: update controls file (FHEM)
-        uses: fhem/fhem-controls-actions@V2.2.1
+        uses: fhem/fhem-controls-actions@v2.3.0
         with:
           filename: controls_signalduino.txt 
       - name: update controls file (lib)
-        uses: fhem/fhem-controls-actions@V2.2.1
+        uses: fhem/fhem-controls-actions@v2.3.0
         with:
           filename: controls_signalduino.txt 
           directory: FHEM/lib
@@ -177,13 +177,14 @@ jobs:
 
       - name: Wait for tests to succeed
         if: ${{ steps.commit.outputs.status }}
-        uses: lewagon/wait-on-check-action@v1.3.3
+        uses: lewagon/wait-on-check-action@v1.3.4
         with:
           running-workflow-name: 'Commit and Push back'
           ref: ${{ github.head_ref }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 20
           allowed-conclusions: success,skipped,cancelled,neutral
+          ignore-checks: codecov/patch
 
       - name: git push
         if: ${{ steps.commit.outputs.status }}
