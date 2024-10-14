@@ -1,3 +1,18 @@
+2024-09-10 - Merge pull request #1266 from RFD-FHEM/sidey79/issue1264
+
+Attribute Clients is used if it is set
+2024-09-08 - SD_WS_48 TFA JOKER Temperature transmitter 30.3212 (#1271)
+
+* SD_WS_48 TFA JOKER
+Decoding realized.
+* Update testData.json
+add testdata for temperature transmitter TFA 30.3212
+2024-09-08 - Bugfix remote control CREATE 6601L (new identity) (#1269)
+
+* Bugfix CREATE_6601L
+Ident does not consist of 4 nibbles, but 5.
+* Update 14_SD_UT.pm
+
 2024-08-04 - new remote control CREATE 6601L (#1263)
 
 * new remote control  CREATE 6601L
