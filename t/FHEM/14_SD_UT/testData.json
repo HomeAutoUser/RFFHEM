@@ -2759,5 +2759,130 @@
       "id" : "20",
       "module" : "SD_UT",
       "name" : "CREATE_6601L_1B900"
+   },
+   {
+      "data" : [
+         {
+            "comment" : "remote control SEAV BeEasy TX",
+            "dmsg" : "P83#4D5",
+            "internals" : {
+               "DEF" : "BeEasy_TX 4D4",
+               "NAME" : "BeEasy_TX_4D4"
+            },
+            "readings" : {
+               "LastAction" : "receive",
+               "deviceCode" : "010011010100",
+               "state" : "down"
+            },
+            "rmsg" : "MU;P0=-25312;P1=286;P2=-354;P3=626;P4=-677;P5=-11292;D=01234123234141234123412341512341232341412341234123415123412323414123412341234151234123234141234123412341512341232341412341234123415123412323414123412341234151234123234141234123412341512341232341412341234123415123412323414123412341234151234123234141234123;CP=1;R=37;O;",
+            "tests" : [
+               {
+                  "attributes" : {
+                     "model" : "BeEasy_TX"
+                  },
+                  "comment" : "#0"
+               }
+            ]
+         },
+         {
+            "comment" : "remote control SEAV BeEasy TX",
+            "dmsg" : "P83#4D6",
+            "internals" : {
+               "DEF" : "BeEasy_TX 4D4",
+               "NAME" : "BeEasy_TX_4D4"
+            },
+            "readings" : {
+               "LastAction" : "receive",
+               "deviceCode" : "010011010100",
+               "state" : "up"
+            },
+            "rmsg" : "MU;P0=-24160;P1=277;P2=-363;P3=602;P4=-690;P6=-11311;D=01234123234141234123414123612341232341412341234141236123412323414123412341412361234123234141234123414123612341232341412341234141236123412323414123412341412361234123234141234123414123612341232341412341234141236123412323414123412341412361234123234141234123;CP=1;R=38;O;",
+            "tests" : [
+               {
+                  "attributes" : {
+                     "model" : "BeEasy_TX"
+                  },
+                  "comment" : "#1"
+               }
+            ]
+         }
+      ],
+      "id" : "83",
+      "module" : "SD_UT",
+      "name" : "BeEasy_TX_4D4"
+   },
+   {
+      "data" : [
+         {
+            "comment" : "Remote control with five buttons and touch control for dim",
+            "dmsg" : "P22#36055F47",
+            "internals" : {
+               "DEF" : "Hamulight_AB 3605",
+               "NAME" : "Hamulight_AB_3605"
+            },
+            "readings" : {
+               "LastAction" : "receive",
+               "deviceCode" : "3605",
+               "state" : "on_off"
+            },
+            "rmsg" : "MU;P0=-16360;P1=144;P2=-191;P3=209;P4=1194;P5=-1203;P6=607;P7=-591;D=01232324562623737623737626262626262376237623762373737373762376262623737373232323245626237376237376262626262623762376237623737373737623762626237373732323232456262373762373762626262626237623762376237373737376237626262373737323232324562623737623737626262626;CP=3;R=5;O;",
+            "tests" : [
+               {
+                  "attributes" : {
+                     "model" : "Hamulight_AB"
+                  },
+                  "comment" : "#0"
+               }
+            ]
+         },
+         {
+            "comment" : "Remote control with five buttons and touch control for dim",
+            "dispatch_repeats" : 2,
+            "dmsg" : "P22#3605553D",
+            "internals" : {
+               "DEF" : "Hamulight_AB 3605",
+               "NAME" : "Hamulight_AB_3605"
+            },
+            "readings" : {
+               "LastAction" : "receive",
+               "deviceCode" : "3605",
+               "state" : "dim_1"
+            },
+            "rmsg" : "MU;P0=-14008;P1=136;P2=-199;P3=210;P4=1200;P5=-1200;P6=596;P7=-591;D=01232324562623737623737626262626262376237623762376237623762623737373762373232323245626237376237376262626262623762376237623762376237626237373737623732323232456262373762373762626262626237623762376237623762376262373737376237323232324562623737623737626262626;CP=3;R=6;O;",
+            "tests" : [
+               {
+                  "attributes" : {
+                     "model" : "Hamulight_AB"
+                  },
+                  "comment" : "#1"
+               }
+            ]
+         },
+         {
+            "comment" : "Remote control with five buttons and touch control for dim",
+            "dmsg" : "P22#36058C74",
+            "internals" : {
+               "DEF" : "Hamulight_AB 3605",
+               "NAME" : "Hamulight_AB_3605"
+            },
+            "readings" : {
+               "LastAction" : "receive",
+               "deviceCode" : "3605",
+               "state" : "dim"
+            },
+            "rmsg" : "MU;P0=-14752;P1=144;P2=-199;P3=210;P4=1194;P5=-1202;P6=601;P7=-598;D=01232324562623737623737626262626262376237376262623737626262373737623762623232323245626237376237376262626262623762373762626237376262623737376237626;CP=3;R=6;",
+            "tests" : [
+               {
+                  "attributes" : {
+                     "model" : "Hamulight_AB"
+                  },
+                  "comment" : "#2"
+               }
+            ]
+         }
+      ],
+      "id" : 22,
+      "module" : "SD_UT",
+      "name" : "Hamulight_AB_3605"
    }
 ]
