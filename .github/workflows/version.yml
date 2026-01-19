@@ -4,6 +4,7 @@ on:
   pull_request:
       paths: 
       - 'FHEM/**'
+      - 'lib/FHEM/**'
       - '.github/workflows/version.yml'
 
 jobs:
@@ -12,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # We need to fetch with a depth of 2 for pull_request so we can do HEAD^2
           fetch-depth: 2
@@ -68,19 +69,27 @@ jobs:
 
     steps:
       - id: file_changes
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@v47
         with:
-          matrix:  true
+          matrix: true
           files: |
               FHEM/**.pm
-              FHEM/lib/**.pm
-              lib/FHEM/**.pm
+              FHEM/lib/*.pm
+              lib/**/*.pm
 
       - name: Get current date
         id: date
         run: |
           echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
           echo "datetimestr=$(date -u +'%Y-%m-%d %T')" >> $GITHUB_OUTPUT
+
+      - name: List all changed files
+        env:
+          ALL_CHANGED_FILES: ${{ steps.file_changes.outputs.all_changed_files }}
+        run: |
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "$file was changed"
+          done
 
       # - name: Set matrix for build
       #   id: set-matrix
@@ -89,7 +98,7 @@ jobs:
       #     echo "matrix={\"files\":${{ steps.file_changes.outputs.all_changed_files }}}" >> "$GITHUB_OUTPUT"
 
   modify:
-    # if: ${{ fromJSON( needs.metadata.outputs.matrix ).files[0] }}
+    if: ${{ fromJSON( needs.metadata.outputs.matrix )[0] }}
     continue-on-error: true
     runs-on: ubuntu-latest
     needs: metadata
@@ -99,7 +108,7 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
     
       - name: Find Version String with sed
         # if: endsWith(matrix.files, '00_SIGNALduino.pm')
@@ -133,7 +142,7 @@ jobs:
           echo ARTIFACT_NAME=${ARTIFACT_NAME} >> $GITHUB_ENV # update GitHub ENV vars
       
       - name: Save updated Files in artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_NAME }}
           retention-days: 1
@@ -146,13 +155,13 @@ jobs:
     needs: modify
     name: Commit and Push back
     steps: 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Download all modified artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: ${{ github.workspace	}}/artifacts
 
@@ -163,14 +172,21 @@ jobs:
               find ./FHEM -name "$FILE" -exec cp $FPATH "{}" \;
           done
       - name: update controls file (FHEM)
-        uses: fhem/fhem-controls-actions@v2.3.0
+        uses: fhem/fhem-controls-actions@v3.0.0
         with:
           filename: controls_signalduino.txt 
       - name: update controls file (lib)
-        uses: fhem/fhem-controls-actions@v2.3.0
+        uses: fhem/fhem-controls-actions@v3.0.0
         with:
           filename: controls_signalduino.txt 
           directory: FHEM/lib
+          writemode: a
+      - name: update controls file (perl lib)
+        if: needs.pr_check.outputs.result != 'true'
+        uses: fhem/fhem-controls-actions@v3.0.0
+        with:
+          filename: controls_signalduino.txt 
+          directory: lib/FHEM/Devices/SIGNALduino
           writemode: a
       - name: git commit back
         id: commit
@@ -181,7 +197,7 @@ jobs:
 
       - name: Wait for tests to succeed
         if: ${{ steps.commit.outputs.status }}
-        uses: lewagon/wait-on-check-action@v1.3.4
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           running-workflow-name: 'Commit and Push back'
           ref: ${{ github.head_ref }}
@@ -192,7 +208,7 @@ jobs:
 
       - name: git push
         if: ${{ steps.commit.outputs.status }}
-        uses: ad-m/github-push-action@v0.8.0
+        uses: ad-m/github-push-action@v1.0.0
         with:
           github_token: ${{ secrets.GH_TOKEN }}
           branch: ${{ github.head_ref }}

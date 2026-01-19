@@ -1,4 +1,4 @@
-# $Id: SD_ProtocolData.pm 0 2025-06-09 18:35:21Z elektron-bbs $
+# $Id: SD_ProtocolData.pm 0 2025-08-17 19:58:13Z elektron-bbs $
 # The file is part of the SIGNALduino project.
 # All protocol definitions are contained in this file.
 #
@@ -733,9 +733,13 @@ package lib::SD_ProtocolData;
               # https://forum.fhem.de/index.php?topic=53282.msg1316246#msg1316246 @ Kent 2024-07-04
               # CREATE_6601L_1B90 fan_2  MS;P0=-7944;P1=-740;P4=253;P6=732;P7=-256;D=404141416767416767674141674141414141414141674141414141674141416767;CP=4;SP=0;R=67;O;m2;
               # CREATE_6601L_1B90 fan_5  MS;P0=-264;P2=-743;P3=254;P4=733;P5=-7942;D=353232324040324040403232403232323232323232324032324032323232403240;CP=3;SP=5;R=40;O;m2;
+              ## Remote control RCnoName20_15 with 15 buttons for ceiling fan Forrovenco QX-01-DE1 with lighting
+              # https://forum.fhem.de/index.php?topic=143046.0 @ drhirn  2025-11-14
+              # RCnoName20_15_41267 all_off       MS;P2=-258;P3=229;P4=-780;P5=755;P6=-7847;D=363452343434343452343452343452523434525252343452523434525252523434;CP=3;SP=6;R=222;O;m2;
+              # RCnoName20_15_41267 light_on_off  MS;P2=-243;P3=277;P4=-739;P5=773;P6=-7861;D=363452343434343452343452343452523434525252345234343452525252525252;CP=3;SP=6;R=224;O;m2;
       {
         name            => 'RCnoName20',
-        comment         => 'Remote control with 4, 9, 10, 12 or 14 buttons',
+        comment         => 'Remote control with 4, 9, 10, 12, 14 or 15 buttons',
         id              => '20',
         knownFreqs      => '433.92',
         one             => [3,-1],  # 720,-240
@@ -3474,10 +3478,14 @@ package lib::SD_ProtocolData;
         method          => \&lib::SD_Protocols::mcBit2Sainlogic, # Call to process this message
       },
     "130" =>  ## Remote control CREATE 6601TL for ceiling fan with light
-                 # https://forum.fhem.de/index.php?msg=1288203 @ erdnar 2023-09-29
-                 # CREATE_6601TL_F53A light_on_off     MS;P1=425;P2=-1142;P3=1187;P4=-395;P5=-12314;D=15121212123412341234341212123412341212121212121234;CP=1;SP=5;R=232;O;m2;
-                 # CREATE_6601TL_F53A light_cold_warm  MS;P1=432;P2=-1143;P3=1183;P4=-393;P5=-12300;D=15121212123412341234341212123412341212121212123434;CP=1;SP=5;R=231;O;m2;
-                 # CREATE_6601TL_F53A fan_faster       MS;P0=-11884;P1=392;P2=-1179;P3=1180;P4=-391;D=10121212123412341234341212123412341212121212341234;CP=1;SP=0;R=231;O;m2;
+              # https://forum.fhem.de/index.php?msg=1288203 @ erdnar 2023-09-29
+              # CREATE_6601TL_F53A light_on_off     MS;P1=425;P2=-1142;P3=1187;P4=-395;P5=-12314;D=15121212123412341234341212123412341212121212121234;CP=1;SP=5;R=232;O;m2;
+              # CREATE_6601TL_F53A light_cold_warm  MS;P1=432;P2=-1143;P3=1183;P4=-393;P5=-12300;D=15121212123412341234341212123412341212121212123434;CP=1;SP=5;R=231;O;m2;
+              # CREATE_6601TL_F53A fan_faster       MS;P0=-11884;P1=392;P2=-1179;P3=1180;P4=-391;D=10121212123412341234341212123412341212121212341234;CP=1;SP=0;R=231;O;m2;
+              # https://github.com/RFD-FHEM/RFFHEM/issues/1296 @ projectsun2 2025-02-04
+              # RCnoName130_3115     on_off         MS;P0=-11334;P1=1213;P2=-416;P3=411;P4=-1222;D=30121234341212123412121234123412343434343434343412;CP=3;SP=0;R=59;m2; 
+              # https://github.com/RFD-FHEM/RFFHEM/issues/1312 @  @ zwiebelxxl 2025-07-26
+              # Lumention_RFSETCCT_14DF     on      MS;P1=-414;P2=396;P3=-1216;P4=1200;P5=-12111;D=25414141234123414123234123232323232323232323232341;CP=2;SP=5;R=38;O;m2;
       {
         name             => 'CREATE_6601TL',
         comment          => 'Remote control for ceiling fan with light',

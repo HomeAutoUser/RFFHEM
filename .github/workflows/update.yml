@@ -4,6 +4,7 @@ on:
   push:
     paths: 
       - 'FHEM/**'
+      - 'lib/**'
       - '.github/workflows/update.yml'
 
 jobs:
@@ -19,7 +20,7 @@ jobs:
     - name: Check if Branch is in PR
       if: github.event_name == 'push'
       id: checkbranch
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         script: |
           console.log(process.env.BRANCH_NAME)
@@ -58,21 +59,28 @@ jobs:
       id: extract_branch
     - name: Checkout Repostory
       if: needs.pr_check.outputs.result != 'true'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         persist-credentials: false
     - name: update controls file (FHEM)
       if: needs.pr_check.outputs.result != 'true'
-      uses: fhem/fhem-controls-actions@v2.3.0
+      uses: fhem/fhem-controls-actions@v3.0.0
       with:
         filename: controls_signalduino.txt 
     - name: update controls file (lib)
       if: needs.pr_check.outputs.result != 'true'
-      uses: fhem/fhem-controls-actions@v2.3.0
+      uses: fhem/fhem-controls-actions@v3.0.0
       with:
         filename: controls_signalduino.txt 
         directory: FHEM/lib
+        writemode: a
+    - name: update controls file (perl lib)
+      if: needs.pr_check.outputs.result != 'true'
+      uses: fhem/fhem-controls-actions@v3.0.0
+      with:
+        filename: controls_signalduino.txt 
+        directory: lib/FHEM/Devices/SIGNALduino
         writemode: a
     - name: update CHANGED
       if: steps.extract_branch.outputs.branch == 'master'

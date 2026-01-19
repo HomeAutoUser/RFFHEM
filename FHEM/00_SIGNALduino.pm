@@ -1,4 +1,4 @@
-# $Id: 00_SIGNALduino.pm 3.5.7 2025-02-19 07:52:43Z sidey79 $
+# $Id: 00_SIGNALduino.pm 0 2026-01-16 10:03:31Z sidey79 $
 # https://github.com/RFD-FHEM/RFFHEM/tree/master
 # The module is inspired by the FHEMduino project and modified in serval ways for processing the incoming messages
 # see http://www.fhemwiki.de/wiki/SIGNALDuino
@@ -8,15 +8,14 @@
 #
 # 2014-2015  S.Butzek, N.Butzek
 # 2016-2019  S.Butzek, Ralf9
-# 2019-2025  S.Butzek, HomeAutoUser, elektron-bbs
-
+# 2019-2026  S.Butzek, HomeAutoUser, elektron-bbs
 
 package main;
 use strict;
 use warnings;
 use Storable qw(dclone); 
 use FHEM::Core::Utils::Math;
-#use version 0.77; our $VERSION = version->declare('v3.5.5');
+#use version 0.77; our $VERSION = version->declare('v4.0.0');
 
 my $missingModulSIGNALduino = ' ';
 
@@ -34,6 +33,9 @@ eval {use Time::HiRes qw(gettimeofday);1} ;
 eval {use FHEM::Core::Timer::Helper;1 } ;
 
 use lib::SD_Protocols;
+use FHEM::Devices::SIGNALduino::SD_Clients;
+use FHEM::Devices::SIGNALduino::SD_Message;
+use FHEM::Devices::SIGNALduino::SD_Matchlist;
 use List::Util qw(first);
 
 #$| = 1;    #Puffern abschalten, Hilfreich fuer PEARL WARNINGS Search
@@ -42,7 +44,7 @@ use List::Util qw(first);
 
 
 use constant {
-  SDUINO_VERSION                  => '3.5.7+20250219',  # Datum wird automatisch bei jedem pull request aktualisiert
+  SDUINO_VERSION                  => '4.0.0',  # Datum wird automatisch bei jedem pull request aktualisiert
   SDUINO_INIT_WAIT_XQ             => 1.5,     # wait disable device
   SDUINO_INIT_WAIT                => 2,
   SDUINO_INIT_MAXRETRY            => 3,
@@ -52,7 +54,6 @@ use constant {
   SDUINO_WRITEQUEUE_NEXT          => 0.3,
   SDUINO_WRITEQUEUE_TIMEOUT       => 2,
 
-  SDUINO_DISPATCH_VERBOSE         => 5,       # default 5
   SDUINO_MC_DISPATCH_VERBOSE      => 5,       # wenn kleiner 5, z.B. 3 dann wird vor dem dispatch mit loglevel 3 die ID und rmsg ausgegeben
   SDUINO_MC_DISPATCH_LOG_ID       => '12.1',  # die o.g. Ausgabe erfolgt nur wenn der Wert mit der ID uebereinstimmt
   SDUINO_PARSE_DEFAULT_LENGHT_MIN => 8,
@@ -144,7 +145,7 @@ my %sets = (
 ## Supported config CC1101 ##
 my @modformat = ('2-FSK','GFSK','-','ASK/OOK','4-FSK','-','-','MSK');
 my @syncmod = ( 'No preamble/sync','15/16 sync word bits detected','16/16 sync word bits detected','30/32 sync word bits detected',
-                'No preamble/sync, carrier-sense above threshold, carrier-sense above threshold', '15/16 + carrier-sense above threshold',
+                'No preamble/sync, carrier-sense above threshold', '15/16 + carrier-sense above threshold',
                 '16/16 + carrier-sense above threshold', '30/32 + carrier-sense above threshold'
               );
 
@@ -196,84 +197,6 @@ my %cc1101_register = (   # for get ccreg 99 and set cc1101_reg
   '2C' => 'TEST2    - N/A ',
   '2D' => 'TEST1    - N/A ',
   '2E' => 'TEST0    - N/A ',
-);
-
-## Supported Clients per default
-my $clientsSIGNALduino = ':CUL_EM:'
-            .'CUL_FHTTK:'
-            .'CUL_TCM97001:'
-            .'CUL_TX:'
-            .'CUL_WS:'
-            .'Dooya:'
-            .'FHT:'
-            .'FLAMINGO:'
-            .'FS10:'
-            .'FS20:'
-            .' :'         # Zeilenumbruch
-            .'Fernotron:'
-            .'Hideki:'
-            .'IT:'
-            .'KOPP_FC:'
-            .'LaCrosse:'
-            .'OREGON:'
-            .'PCA301:'
-            .'RFXX10REC:'
-            .'Revolt:'
-            .'SD_AS:'
-            .'SD_Rojaflex:'
-            .' :'         # Zeilenumbruch
-            .'SD_BELL:'
-            .'SD_GT:'
-            .'SD_Keeloq:'
-            .'SD_RSL:'
-            .'SD_UT:'
-            .'SD_WS07:'
-            .'SD_WS09:'
-            .'SD_WS:'
-            .'SD_WS_Maverick:'
-            .'SOMFY:'
-            .'WMBUS:'
-            .' :'         # Zeilenumbruch
-            .'Siro:'
-            .'SIGNALduino_un:'
-          ;
-
-## default regex match List for dispatching message to logical modules, can be updated during runtime because it is referenced
-my %matchListSIGNALduino = (
-      '1:IT'                => '^i......',
-      '2:CUL_TCM97001'      => '^s[A-Fa-f0-9]+',
-      '3:SD_RSL'            => '^P1#[A-Fa-f0-9]{8}',
-      '5:CUL_TX'            => '^TX..........',                       # Need TX to avoid FHTTK
-      '6:SD_AS'             => '^P2#[A-Fa-f0-9]{7,8}',                # Arduino based Sensors, should not be default
-      '4:OREGON'            => '^(3[8-9A-F]|[4-6][0-9A-F]|7[0-8]).*',
-      '7:Hideki'            => '^P12#75[A-F0-9]+',
-      '9:CUL_FHTTK'         => '^T[A-F0-9]{8}',
-      '10:SD_WS07'          => '^P7#[A-Fa-f0-9]{6}[AFaf][A-Fa-f0-9]{2,3}',
-      '11:SD_WS09'          => '^P9#F[A-Fa-f0-9]+',
-      '12:SD_WS'            => '^W\d+x{0,1}#.*',
-      '13:RFXX10REC'        => '^(20|29)[A-Fa-f0-9]+',
-      '14:Dooya'            => '^P16#[A-Fa-f0-9]+',
-      '15:SOMFY'            => '^Ys[0-9A-F]+',
-      '16:SD_WS_Maverick'   => '^P47#[A-Fa-f0-9]+',
-      '17:SD_UT'            => '^P(?:14|20|20.1|22|24|26|29|30|34|46|56|68|69|76|78|81|83|86|90|91|91.1|92|93|95|97|99|104|105|114|118|121|127|128|130|132)#.*', # universal - more devices with different protocols
-      '18:FLAMINGO'         => '^P13\.?1?#[A-Fa-f0-9]+',              # Flamingo Smoke
-      '19:CUL_WS'           => '^K[A-Fa-f0-9]{5,}',
-      '20:Revolt'           => '^r[A-Fa-f0-9]{22}',
-      '21:FS10'             => '^P61#[A-F0-9]+',
-      '22:Siro'             => '^P72#[A-Fa-f0-9]+',
-      '23:FHT'              => '^81..(04|09|0d)..(0909a001|83098301|c409c401)..',
-      '24:FS20'             => '^81..(04|0c)..0101a001',
-      '25:CUL_EM'           => '^E0.................',
-      '26:Fernotron'        => '^P82#.*',
-      '27:SD_BELL'          => '^P(?:15|32|41|42|57|79|96|98|112)#.*',
-      '28:SD_Keeloq'        => '^P(?:87|88)#.*',
-      '29:SD_GT'            => '^P49#[A-Fa-f0-9]+',
-      '30:LaCrosse'         => '^(\\S+\\s+9 |OK\\sWS\\s)',
-      '31:KOPP_FC'          => '^kr\w{18,}',
-      '32:PCA301'           => '^\\S+\\s+24',
-      '33:SD_Rojaflex'      => '^P109#[A-Fa-f0-9]+',
-      '34:WMBUS'            => '^b.*',
-      'X:SIGNALduino_un'    => '^[u]\d+#.*',
 );
 
 my %symbol_map = (one => 1 , zero =>0 ,sync => '', float=> 'F', 'start' => '');
@@ -384,41 +307,36 @@ sub SIGNALduino_Define {
   my @a =split m{\s+}xms, $def;
 
   if(@a != 3) {
-    my $msg = 'Define, wrong syntax: define <name> SIGNALduino {none | devicename[\@baudrate] | devicename\@directio | hostname:port}';
+    my $msg = 'Define, wrong parameter count: define <name> SIGNALduino {none | devicename[\@baudrate] | devicename\@directio | hostname:port}';
     Log3 undef, 2, $msg;
     return $msg;
   }
 
   DevIo_CloseDev($hash);
   my $name = $a[0];
-
-
   my $dev = $a[2];
-  #$hash->{debugMethod}->(qq[dev: $dev]);
-  #my $hardware=AttrVal($name,'hardware','nano');
-  #$hash->{debugMethod}->(qq[hardware: $hardware]);
 
   if($dev eq 'none') {
     Log3 $name, 1, "$name: Define, device is none, commands will be echoed only";
     $attr{$name}{dummy} = 1;
-  }  elsif ($dev !~ m/\@/) { 
+  } elsif ($dev !~ m/\@/) {
     if ( ($dev =~ m~^(?:/[^/ ]*)+?$~xms || $dev =~ m~^COM\d$~xms) )  # bei einer IP oder hostname wird kein \@57600 angehaengt
     {
       $dev .= '@57600' 
     } elsif ($dev !~ /@\d+$/ && ($dev !~ /^
       (?: (?:[a-z0-9-]+(?:\.[a-z]{2,6})?)*|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}
           (?:25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9]))
-      : (?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3})$/xmsi) ) { 
-      my $msg = 'Define, wrong hostname/port syntax: define <name> SIGNALduino {none | devicename[\@baudrate] | devicename\@directio | hostname:port}';
+      : (?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3})$/xmsi) ) { # bei einer IP oder hostname wird kein \@57600 angehaengt{ 
+      my $msg = "Define, wrong hostname/port syntax ($dev): define <name> SIGNALduino {none | devicename[\@baudrate] | devicename\@directio | hostname:port}";
       Log3 undef, 2, $msg;
+      $hash->{STATE} = 'error';
       return $msg;
     }
   }
   
-  #$hash->{CMDS} = '';
   $hash->{ClientsKeepOrder} = 1;
-  $hash->{Clients}    = $clientsSIGNALduino;
-  $hash->{MatchList}  = \%matchListSIGNALduino;
+  $hash->{Clients}    = FHEM::Devices::SIGNALduino::SD_Clients::getClientsasStr();
+  $hash->{MatchList}  = FHEM::Devices::SIGNALduino::SD_Matchlist::getMatchListasRef();
   $hash->{DeviceName} = $dev;
   $hash->{logMethod}  = \&main::Log3;
   $hash->{debugMethod}  = sub { return; };
@@ -428,12 +346,11 @@ sub SIGNALduino_Define {
   $hash->{protocolObject}->registerLogCallback(SIGNALduino_createLogCallback($hash));
     
   FHEM::Core::Timer::Helper::addTimer($name, time(), \&SIGNALduino_IdList,"sduino_IdList:$name",0 );
-  #InternalTimer(gettimeofday(), \&SIGNALduino_IdList,"sduino_IdList:$name",0);       # verzoegern bis alle Attribute eingelesen sind
   
   if($dev ne 'none') {
     $ret = DevIo_OpenDev($hash, 0, \&SIGNALduino_DoInit, \&SIGNALduino_Connect);
   } else {
-  $hash->{DevState} = 'initialized';
+    $hash->{DevState} = 'initialized';
     readingsSingleUpdate($hash, 'state', 'opened', 1);
   }
 
@@ -455,10 +372,9 @@ sub SIGNALduino_Define {
 ############################# package main
 sub SIGNALduino_Connect {
   my ($hash, $err) = @_;
-
   # damit wird die err-msg nur einmal ausgegeben
   if (!defined($hash->{disConnFlag}) && $err) {
-    $hash->{logMethod}->($hash->{NAME}, 3, "$hash->{NAME}: Connect, ${err}");
+    $hash->{logMethod}->($hash, 3, "$hash->{NAME}: Connect, ${err}");
     $hash->{disConnFlag} = 1;
   }
 }
@@ -767,11 +683,11 @@ sub SIGNALduino_Attr_rfmode {
   my $aVal = shift // return;
 
   if ( (InternalVal($hash->{NAME},"cc1101_available",0) == 0) && (!IsDummy($hash->{NAME})) ) {
-    return 'ERROR: This attribute is only available for a receiver with CC1101.';
+    return 'ERROR: This rfmode is only available for a receiver with CC1101.';
   }
   my $hardware = AttrVal($hash->{NAME},'hardware','unknown');
-  if ($aVal =~ /^WMBus_/ && substr($hardware,0,3) ne 'esp') {
-    return 'ERROR: This attribute is only available for a receiver with ESP8266 or ESP32.';
+  if ($aVal =~ /^WMBus_/ && (substr($hardware,0,3) ne 'esp' && substr($hardware,0,5) ne 'MAPLE')) {
+    return 'ERROR: This rfmode is only available for a receiver with ESP8266, ESP32 or Maple Mini.';
   }
   
   ## DevState waitInit is on first start after FHEM restart | initialized is after cc1101 available
@@ -1391,7 +1307,7 @@ sub SIGNALduino_DoInit {
 
   my ($ver, $try) = ('', 0);
   #Dirty hack to allow initialisation of DirectIO Device for some debugging and tesing
-
+  $hash->{logMethod}->($hash, 1, "$name: DoInit, called");
   delete($hash->{disConnFlag}) if defined($hash->{disConnFlag});
 
   FHEM::Core::Timer::Helper::removeTimer($name,\&SIGNALduino_HandleWriteQueue,"HandleWriteQueue:$name");
@@ -2240,81 +2156,6 @@ sub SIGNALduino_Split_Message {
   return %ret;
 }
 
-############################# package main, test exists
-# Function which dispatches a message if needed.
-sub SIGNALduno_Dispatch {
-  my ($hash, $rmsg, $dmsg, $rssi, $id, $freqafc) = @_;
-  my $name = $hash->{NAME};
-
-  if (!defined($dmsg))
-  {
-    $hash->{logMethod}->($name, 5, "$name: Dispatch, dmsg is undef. Skipping dispatch call");
-    return;
-  }
-
-  #SIGNALduino_Log3 $name, 5, "$name: Dispatch, DMSG: $dmsg";
-
-  my $DMSGgleich = 1;
-  if ($dmsg eq $hash->{LASTDMSG}) {
-    $hash->{logMethod}->($name, SDUINO_DISPATCH_VERBOSE, "$name: Dispatch, $dmsg, test gleich");
-  } else {
-    if ( defined $hash->{DoubleMsgIDs}{$id} ) {
-      $DMSGgleich = 0;
-      $hash->{logMethod}->($name, SDUINO_DISPATCH_VERBOSE, "$name: Dispatch, $dmsg, test ungleich");
-    } else {
-      $hash->{logMethod}->($name, SDUINO_DISPATCH_VERBOSE, "$name: Dispatch, $dmsg, test ungleich: disabled");
-    }
-    $hash->{LASTDMSG} = $dmsg;
-    $hash->{LASTDMSGID} = $id;
-  }
-
-  if ($DMSGgleich) {
-    #Dispatch if dispatchequals is provided in protocol definition or only if $dmsg is different from last $dmsg, or if 2 seconds are between transmits
-    if (  ( $hash->{protocolObject}->checkProperty($id,'dispatchequals','false') eq 'true') 
-        || ($hash->{DMSG} ne $dmsg) 
-        || ($hash->{TIME}+2 < time() )  )
-    {
-      $hash->{MSGCNT}++;
-      $hash->{TIME} = time();
-      $hash->{DMSG} = $dmsg;
-      #my $event = 0;
-      if (substr(ucfirst($dmsg),0,1) eq 'U') { # u oder U
-        #$event = 1;
-        DoTrigger($name, 'DMSG ' . $dmsg);
-        return if (substr($dmsg,0,1) eq 'U'); # Fuer $dmsg die mit U anfangen ist kein Dispatch notwendig, da es dafuer kein Modul gibt klein u wird dagegen dispatcht
-      }
-      #readingsSingleUpdate($hash, 'state', $hash->{READINGS}{state}{VAL}, $event);
-
-      $hash->{RAWMSG} = $rmsg;
-      my %addvals = (
-        DMSG => $dmsg,
-        Protocol_ID => $id
-      );
-      if (AttrVal($name,'suppressDeviceRawmsg',0) == 0) {
-        $addvals{RAWMSG} = $rmsg
-      }
-      if(defined($rssi)) {
-        $hash->{RSSI} = $rssi;
-        $addvals{RSSI} = $rssi;
-        $rssi .= ' dB,'
-      }
-      else {
-        $rssi = '';
-      }
-      if(defined($freqafc)) { # AFC cc1101 0x32 (0xF2): FREQEST – Frequency Offset Estimate from Demodulator
-        $addvals{FREQAFC} = $freqafc;
-      }
-
-      $dmsg = lc($dmsg) if ($id eq '74' or $id eq '74.1');    # 10_FS20.pm accepted only lower case hex
-      $hash->{logMethod}->($name, SDUINO_DISPATCH_VERBOSE, "$name: Dispatch, $dmsg, $rssi dispatch");
-      Dispatch($hash, $dmsg, \%addvals);  ## Dispatch to other Modules
-
-    } else {
-      $hash->{logMethod}->($name, 4, "$name: Dispatch, $dmsg, Dropped due to short time or equal msg");
-    }
-  }
-}
-
 ############################# package main  todo: move to lib::SD_Protocols
 # param #1 is name of definition
 # param #2 is protocol id
@@ -2541,7 +2382,7 @@ sub SIGNALduino_Parse_MS {
       {
         $message_dispatched++;
         $hash->{logMethod}->($name, 4, "$name: Parse_MS, Decoded matched MS protocol id $id dmsg $dmsg length " . scalar @bit_msg . " $rssiStr");
-        SIGNALduno_Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
+        FHEM::Devices::SIGNALduino::SD_Message::Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
       }
     }
 
@@ -2780,7 +2621,7 @@ sub SIGNALduino_Parse_MU {
         {
           $nrDispatch++;
           $hash->{logMethod}->($name, 4, "$name: Parse_MU, Decoded matched MU protocol id $id dmsg $dmsg length $bit_length dispatch($nrDispatch/". AttrVal($name,'maxMuMsgRepeat', 4) . ") $rssiStr");
-          SIGNALduno_Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
+          FHEM::Devices::SIGNALduino::SD_Message::Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
           if ( $nrDispatch == AttrVal($name,'maxMuMsgRepeat', 4))
           {
             last;
@@ -2905,7 +2746,7 @@ sub SIGNALduino_Parse_MC {
               defined($rssi)  ? $hash->{logMethod}->($name, SDUINO_MC_DISPATCH_VERBOSE, qq[$name: Parse_MC, $id, $rmsg $rssiStr])
                       :  $hash->{logMethod}->($name, SDUINO_MC_DISPATCH_VERBOSE, qq[$name: Parse_MC, $id, $rmsg]);
             }
-            SIGNALduno_Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
+            FHEM::Devices::SIGNALduino::SD_Message::Dispatch($hash,$rmsg,$dmsg,$rssi,$id);
             $message_dispatched=1;
           }
         } else {
@@ -2990,7 +2831,7 @@ sub SIGNALduino_Parse_MN {
     }
     $dmsg = sprintf('%s%s',$hash->{protocolObject}->checkProperty($id,'preamble',''),$methodReturn[0]);
     $hash->{logMethod}->($name, 5, qq[$name: Parse_MN, Decoded matched MN Protocol id $id dmsg=$dmsg $rssiStr]);
-    SIGNALduno_Dispatch($hash,$rmsg,$dmsg,$rssi,$id,$freqafc);
+    FHEM::Devices::SIGNALduino::SD_Message::Dispatch($hash,$rmsg,$dmsg,$rssi,$id,$freqafc);
     $message_dispatched++;
     
   }
@@ -3138,7 +2979,7 @@ sub SIGNALduino_Attr {
     return  if ($hash->{Clients});
     
     ## Set defaults
-    $hash->{Clients} = $clientsSIGNALduino; 
+    $hash->{Clients} = FHEM::Devices::SIGNALduino::SD_Clients::getClientsasStr();
     return 'Setting defaults';
   }
   ## Change MatchList
@@ -3150,13 +2991,7 @@ sub SIGNALduino_Attr {
         $hash->{logMethod}->($name, 2, $name .": Attr, $aVal: ". $@);
       }
     }
-
-    if( ref($match_list) eq 'HASH' ) {
-      $hash->{MatchList} = { %matchListSIGNALduino , %$match_list };          ## Allow incremental addition of an entry to existing hash list
-    } else {
-      $hash->{MatchList} = \%matchListSIGNALduino;                      ## Set defaults
-      $hash->{logMethod}->($name, 2, $name .": Attr, $aVal: not a HASH using defaults") if( $aVal );
-    }
+    FHEM::Devices::SIGNALduino::SD_Matchlist::UpdateMatchList($hash,$match_list);
   }
   ## Change verbose
   elsif ($aName eq 'verbose') {
@@ -3430,7 +3265,7 @@ sub SIGNALduino_IdList {
       #SIGNALduino_Log3 $name, 3, "$name IdList, Attr blacklist $w";
     }
 
-    $hash->{Clients} = AttrVal($name,'Clients', $clientsSIGNALduino); # use Attribute Clients or default if whitelist is not active
+    $hash->{Clients} = AttrVal($name,'Clients', FHEM::Devices::SIGNALduino::SD_Clients::getClientsasStr()); # use Attribute Clients or default if whitelist is not active
   } else {
     $hash->{Clients} =  q[] # clear Clients if whitelist is active    
   }
@@ -3497,7 +3332,7 @@ sub SIGNALduino_IdList {
     }
   }
   $hash->{Clients} = $hash->{Clients} =~ s/.{25,50}:\K(?=.{25,50})/ :/rg; # Add spaces to create linebreaks in webview
-  $hash->{Clients} = substr($hash->{Clients}, 0, -1); # Remove last :
+  $hash->{Clients} =~ s/^://; $hash->{Clients} =~ s/:$//; # Remove leading/trailing :
 
   delete $hash->{'.clientArray'}; #force recompute of clientArray after changes
 
@@ -5017,22 +4852,24 @@ USB-connected devices (SIGNALduino):<br>
 <a name="SIGNALduinodefine"></a>
 <b>Define</b>
 <ul><code>define &lt;name&gt; SIGNALduino &lt;device&gt; </code></ul>
-USB-connected devices (SIGNALduino):<br>
 <ul>
-  <li> &lt;device&gt; spezifiziert den seriellen Port f&uuml;r die Kommunikation mit dem SIGNALduino.
+    <u>USB-connected devices (SIGNALduino):</u><br><br>
+    &lt;device&gt; spezifiziert den seriellen Port f&uuml;r die Kommunikation mit dem SIGNALduino.
     Der Name des seriellen Ger&auml;ts h&auml;ngt von Ihrer  Distribution ab. In Linux ist das <code>cdc_acm</code> Kernel_Modul daf&uuml;r verantwortlich und es wird ein <code>/dev/ttyACM0</code> oder <code>/dev/ttyUSB0</code> Ger&auml;t angelegt. Wenn deine Distribution kein <code>cdc_acm</code> Module besitzt, kannst du usbserial nutzen um den SIGNALduino zu betreiben mit folgenden Kommandos:
     <ul>
       <li>modprobe usbserial</li>
       <li>vendor=0x03eb</li>
       <li>product=0x204b</li>
     </ul>
-    In diesem Fall ist das Ger&auml;t h&ouml;chstwahrscheinlich <code>/dev/ttyUSB0</code>.<br><br>
-
+    In diesem Fall ist das Ger&auml;t h&ouml;chstwahrscheinlich <code>/dev/ttyUSB0</code>.
+    <br><br>
     Sie k&ouml;nnen auch eine Baudrate angeben, wenn der Ger&auml;tename das @ enth&auml;lt, Beispiel: <code>/dev/ttyACM0@57600</code><br>Dies ist auch die Standard-Baudrate.<br><br>
     Es wird empfohlen, das Ger&auml;t &uuml;ber einen Namen anzugeben, der sich nicht &auml;ndert. Beispiel via by-id devicename: <code>/dev/serial/by-id/usb-1a86_USB2.0-Serial-if00-port0@57600</code><br>
-    Wenn die Baudrate "directio" (Bsp: <code>/dev/ttyACM0@directio</code>), dann benutzt das Perl Modul nicht Device::SerialPort und FHEM &ouml;ffnet das Ger&auml;t mit einem file io. Dies kann funktionieren, wenn das Betriebssystem die Standardwerte f&uuml;r die seriellen Parameter verwendet. Bsp: einige Linux Distributionen und
-    OSX.<br><br>
-  </li>
+    Wenn die Baudrate "directio" (Bsp: <code>/dev/ttyACM0@directio</code>), dann benutzt das Perl Modul nicht Device::SerialPort und FHEM &ouml;ffnet das Ger&auml;t mit einem file io. Dies kann funktionieren, wenn das Betriebssystem die Standardwerte f&uuml;r die seriellen Parameter verwendet. Bsp: einige Linux Distributionen und OSX.
+    <br><br>
+    <u>WiFi-connected devices (SIGNALduino):</u><br><br>
+    Bei einem ESP8266 oder ESP32 wird anstelle des seriellen Ports die IP des SIGNALduino in der Form <code>xxx.xxx.xxx.xxx:23</code> angegeben. Dabei stellt die 23 den verwendeten Port dar.
+    <br><br>
 </ul>
 
 
@@ -5394,25 +5231,25 @@ USB-connected devices (SIGNALduino):<br>
     Derzeit m&ouml;gliche Hardware Varianten mit verschiedenen Empfänger Optionen.
     Die einfache Variante besteht aus einem Empf&auml;nger und einen Sender, die über je eine einzige digitale Signalleitung Datem mit dem Microcontroller austauschen.
     Der Empf&auml;nger sendet dabei und der Sender empf&auml;ngt dabei ausschließlich.
-    Weiterhin existiert der den sogenannten cc1101 (sub 1 GHZ) Chip, welche empfangen und senden kann. Dieser wird über die SPI Verbindung angebunden.
-    ESP8266 Hardware Typen, unterstützen derzeit kein flashen aus dem Modul und ben&ouml;tigen mindestens 1 MB Flash Speicher.
+    Weiterhin existiert der sogenannte cc1101 (sub 1 GHZ) Chip, welcher empfangen und senden kann. Dieser wird über die SPI Verbindung angebunden.
+    ESP8266/ESP32 Hardware Typen unterstützen derzeit kein flashen aus dem Modul und ben&ouml;tigen mindestens 1 MB Flash Speicher.
     <ul>
       <li>ESP32s: ESP32 f&uuml;r einfachen eindraht Empf&auml;nger</li>
       <li>ESP32cc1101: ESP32 mit einem CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>ESP8266s: ESP8266 f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>ESP8266s: ESP8266 f&uuml;r einfachen Empf&auml;nger und Sender</li>
       <li>ESP8266cc1101: ESP8266 mit einem CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>MAPLEMINI_F103CBs: MapleMini F103CB (STM32) f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>MAPLEMINI_F103CBs: MapleMini F103CB (STM32) f&uuml;r einfachen Empf&auml;nger und Sender</li>
       <li>MAPLEMINI_F103CBcc1101: MapleMini F103CB (STM32) mit einem CC110x-Empf&auml;nger (SPI Verbindung)</li>
       <li>miniculCC1101: Arduino pro Mini mit einem CC110x-Empf&auml;nger (SPI Verbindung) entsprechend dem minicul verkabelt</li>
-      <li>nano328: Arduino Nano 328 f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>nano328: Arduino Nano 328 f&uuml;r einfachen Empf&auml;nger und Sender</li>
       <li>nanoCC1101: Arduino Nano f&uuml;r einen CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>promini8s: Arduino Pro Mini 328 8Mhz f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>promini8s: Arduino Pro Mini 328 8Mhz f&uuml;r einfachen Empf&auml;nger und Sender</li>
       <li>promini8cc1101: Arduino Pro Mini 328 8Mhz f&uuml;r einen CC110x-Empf&auml;nger (SPI Verbindung)</li>
-      <li>promini16s: Arduino Pro Mini 328 16Mhz f&uuml;r einfachen eindraht Empf&auml;nger</li>
+      <li>promini16s: Arduino Pro Mini 328 16Mhz f&uuml;r einfachen Empf&auml;nger und Sender</li>
       <li>promini16cc1101: Arduino Pro Mini 328 16Mhz f&uuml;r einen CC110x-Empf&auml;nger (SPI Verbindung)</li>
       <li>radinoCC1101: Ein Arduino kompatibler Radino mit CC110x-Empfänger (SPI Verbindung)</li>
     </ul><br>
-    Notwendig f&uuml;r den Befehl <code>flash</code>. Hier sollten Sie angeben, welche Hardware Sie mit dem usbport verbunden haben. Andernfalls kann es zu Fehlfunktionen des Ger&auml;ts kommen. Wichtig ist auch das Attribut <code>updateChannelFW</code><br>
+    Notwendig f&uuml;r den Befehl <code>flash</code>. Hier sollten Sie angeben, welche Hardware Sie mit dem usbport verbunden haben. Andernfalls kann es zu Fehlfunktionen des Ger&auml;ts kommen. Wichtig ist auch das Attribut <code>updateChannelFW</code>.<br>
   </li><br>
   <a name="longids"></a>
   <li>longids<br>
@@ -5630,6 +5467,7 @@ USB-connected devices (SIGNALduino):<br>
         "Symbol": "0",
         "constant": "0",
         "lib::SD_Protocols": "0",
+        "FHEM::Core::Timer::Helper": "0",
         "strict": "0",
         "warnings": "0",
         "Time::HiRes": "0",
@@ -5653,7 +5491,6 @@ USB-connected devices (SIGNALduino):<br>
         "warnings": "0",
         "Data::Dumper": "0",
         "Time::HiRes": "0",
-        "FHEM::Core::Timer::Helper": "0",
         "JSON": "0"
       },
       "suggests": {
@@ -5704,7 +5541,7 @@ USB-connected devices (SIGNALduino):<br>
       "web": "https://wiki.fhem.de/wiki/SIGNALduino"
     }
   },
-  "version": "v3.5.7"
+  "version": "v4.0.0"
 }
 =end :application/json;q=META.json
 =cut
