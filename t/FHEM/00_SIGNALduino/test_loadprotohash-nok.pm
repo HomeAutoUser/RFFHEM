@@ -1,4 +1,4 @@
-package lib::SD_ProtocolData;
+package FHEM::Devices::SIGNALduino::SD_Protocols::Data;
 { 
 	our %protocols = (
     "9999"    => 

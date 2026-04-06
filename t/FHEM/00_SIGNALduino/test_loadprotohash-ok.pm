@@ -1,4 +1,4 @@
-package lib::SD_ProtocolData;
+package FHEM::Devices::SIGNALduino::SD_Protocols::Data;
 {
 	use strict;
 	use warnings;
@@ -224,7 +224,7 @@ package lib::SD_ProtocolData;
 				format				=> 'manchester',				
 				length_min			=> '1',
 				length_max			=> '24',
-				method				=> \&lib::SD_Protocols::Not_Existing_Sub,	
+				method				=> \&FHEM::Devices::SIGNALduino::SD_Protocols::Not_Existing_Sub,	
 				polarity			=> 'invert',
 		},
 		"9988"	=>	
@@ -238,7 +238,7 @@ package lib::SD_ProtocolData;
 				modulation      => '2-FSK',
 				regexMatch      => qr/^35/,   
 				clientmodule    => 'LaCrosse',
-				method			=> \&lib::SD_Protocols::Not_Existing_Sub,	
+				method			=> \&FHEM::Devices::SIGNALduino::SD_Protocols::Not_Existing_Sub,	
 			},
 		"9987"	=>	
 			{
