@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Project
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # We need to fetch with a depth of 2 for pull_request so we can do HEAD^2
           fetch-depth: 2
@@ -108,7 +108,7 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
     
       - name: Find Version String with sed
         # if: endsWith(matrix.files, '00_SIGNALduino.pm')
@@ -155,7 +155,7 @@ jobs:
     needs: modify
     name: Commit and Push back
     steps: 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -182,7 +182,7 @@ jobs:
 
       - name: Wait for tests to succeed
         if: ${{ steps.commit.outputs.status }}
-        uses: lewagon/wait-on-check-action@v1.6.0
+        uses: lewagon/wait-on-check-action@v1.8.1
         with:
           running-workflow-name: 'Commit and Push back'
           ref: ${{ github.head_ref }}
@@ -193,7 +193,7 @@ jobs:
 
       - name: git push
         if: ${{ steps.commit.outputs.status }}
-        uses: ad-m/github-push-action@v1.0.0
+        uses: ad-m/github-push-action@v1.3.0
         with:
           github_token: ${{ secrets.GH_TOKEN }}
           branch: ${{ github.head_ref }}
